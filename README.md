@@ -94,7 +94,7 @@ Eclipse provides excellent support for running Spring MVC applications directly 
 
 ### Prerequisites for Eclipse
 - **Eclipse IDE for Enterprise Java Developers** (includes Web Tools Platform)
-- **Apache Tomcat 10.x** installed locally
+- **Apache Tomcat 10.x** installed locally (does not recognise Choco install, recommend using embedded installer)
 - **Java 17** configured in Eclipse
 
 ### Step-by-Step Eclipse Setup
