@@ -1,6 +1,6 @@
 # Monitor Centre Application
 
-A Spring MVC web application for monitoring and management, built with Java 17 and deployed as a WAR file.
+A Spring MVC web application for monitoring and management, built with Java 17 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
 
 ## Prerequisites
 
