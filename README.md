@@ -88,6 +88,115 @@ Most IDEs (IntelliJ IDEA, Eclipse) support direct deployment to Tomcat:
 3. Deploy the project to the server
 4. Start the server from within the IDE
 
+## Eclipse Development Setup (Recommended for Interactive Development)
+
+Eclipse provides excellent support for running Spring MVC applications directly without WAR deployment:
+
+### Prerequisites for Eclipse
+- **Eclipse IDE for Enterprise Java Developers** (includes Web Tools Platform)
+- **Apache Tomcat 10.x** installed locally
+- **Java 17** configured in Eclipse
+
+### Step-by-Step Eclipse Setup
+
+#### 1. Import the Project
+```
+File → Import → Existing Maven Projects
+Browse to your project directory
+Select the pom.xml file
+Click Finish
+```
+
+#### 2. Configure Tomcat Server in Eclipse
+```
+Window → Show View → Servers (or Window → Show View → Other → Server → Servers)
+In Servers view: Right-click → New → Server
+Select: Apache → Tomcat v10.0 Server
+Browse to your Tomcat installation directory
+Click Finish
+```
+
+#### 3. Configure Project for Server
+```
+Right-click on your Tomcat server in Servers view
+Select "Add and Remove..."
+Move your project from Available to Configured
+Click Finish
+```
+
+#### 4. Run the Application
+```
+Right-click on Tomcat server → Start
+Or click the green "Start" button in Servers view
+```
+
+#### 5. Access the Application
+- URL: `http://localhost:8080/smvc/`
+- The context path is automatically set to the project name
+
+### Eclipse Development Benefits
+
+- **Hot Reload**: Changes to Java files are automatically recompiled and reloaded
+- **Template Updates**: Thymeleaf template changes are reflected immediately
+- **Debugging**: Full debugging support with breakpoints
+- **No WAR Building**: Direct deployment from workspace
+- **Fast Iteration**: Immediate feedback on code changes
+
+### Eclipse Project Configuration
+
+#### Project Facets (should be automatically configured)
+```
+Right-click project → Properties → Project Facets
+Ensure these are enabled:
+- Java 17
+- Dynamic Web Module 6.0
+- JavaScript 1.0 (optional)
+```
+
+#### Deployment Assembly
+```
+Right-click project → Properties → Deployment Assembly
+Should include:
+- Maven Dependencies → WEB-INF/lib
+- src/main/webapp → /
+- Java Build Path Libraries → WEB-INF/lib
+```
+
+### Troubleshooting Eclipse Issues
+
+#### Server Won't Start
+```
+1. Check Servers view for error messages
+2. Verify Tomcat installation path
+3. Ensure port 8080 is not in use
+4. Clean and refresh project (F5)
+```
+
+#### Changes Not Reflected
+```
+1. Project → Clean → Clean all projects
+2. Right-click server → Clean...
+3. Right-click server → Publish
+4. Restart server if needed
+```
+
+#### Maven Dependencies Issues
+```
+1. Right-click project → Maven → Reload Projects
+2. Right-click project → Maven → Update Project
+3. Check "Force Update of Snapshots/Releases"
+```
+
+### Eclipse Development Workflow
+
+1. **Make Code Changes**: Edit Java files, templates, or resources
+2. **Auto-Compile**: Eclipse automatically compiles Java changes
+3. **Hot Deploy**: Server automatically picks up changes
+4. **Test**: Refresh browser to see changes
+5. **Debug**: Set breakpoints and debug as needed
+
+This setup provides the fastest development cycle without the need to build and deploy WAR files manually.
+
 ## Development Workflow
 
 ### Running Tests
