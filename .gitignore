@@ -1,1 +1,22 @@
-node_modules
+/automation/
+/buildnumber.counter
+/manifest.txt
+/TasksLocal/
+/.vagrant/
+/*.gz
+/TasksRemote/
+/propertiesForLocalTasks/
+/propertiesForRemoteTasks/
+/release.sh
+/propertiesForContainerTasks/
+/Dockerfile
+
+# VS Code
+/.vscode/
+
+# Ignore the archetype generated directory
+/smvc/
+/test-results/
+/target/
+
+bin
