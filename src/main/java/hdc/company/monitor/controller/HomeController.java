@@ -16,13 +16,21 @@ public class HomeController {
     public String home(Model model) {
         model.addAttribute("message", "Monitor Centre");
         model.addAttribute("version", getAppVersion());
+        // if the user is authenticated, show their username
+        // SecurityContextHolder can be used in views directly via Thymeleaf extras if configured,
+        // but for simplicity we'll leave principal handling to the view layer for now.
         return "home";
     }
 
     @PostMapping("/login")
     public String login() {
-        // Placeholder for login logic
+        // Spring Security handles authentication; POST to /login will be processed by the filter
         return "redirect:/";
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
     }
 
     private String getAppVersion() {

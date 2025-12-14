@@ -199,6 +199,79 @@ This setup provides the fastest development cycle without the need to build and 
 
 ## Development Workflow
 
+## Active Directory authentication
+
+This application can authenticate users against an Active Directory (AD) server using LDAP.
+
+Configuration
+- The AD domain and LDAP URL can be configured via Spring `@Value` properties (defaults shown):
+
+```properties
+ad.domain=hdc.webhop.net
+ad.url=ldap://hdc.webhop.net/
+```
+
+If your AD requires TLS, change the URL to `ldaps://hdc.webhop.net:636/` and ensure the container trusts the AD server certificate.
+
+Login page
+- The application uses Spring Security form login at `/login` (Thymeleaf template at `WEB-INF/templates/login.html`).
+
+Notes
+- The app uses `ActiveDirectoryLdapAuthenticationProvider` which performs a direct bind with the provided username and password.
+- Username formats accepted by AD commonly include `DOMAIN\\username` or `username@domain` depending on your AD configuration.
+
+Development
+-----------
+
+If you are developing locally without AD access, the project provides a `dev` Spring profile that uses an in-memory user store.
+
+- Start the app with the `dev` profile:
+
+```powershell
+mvn -Dspring.profiles.active=dev -DskipTests=false clean verify
+```
+
+- Default dev credentials (only use locally): `devuser` / `password`
+
+To switch back to Active Directory authentication, run without the `dev` profile (or with a profile that enables AD) and set `ad.domain` / `ad.url` appropriately.
+
+Run tests with the `dev` profile
+--------------------------------
+
+When running unit tests locally and you want them to use the in-memory dev user (no AD required), run Maven with the `dev` profile. In PowerShell it's easiest to set an environment variable first:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "dev"
+mvn clean test
+```
+
+You can also run a single test or use the Maven property directly (Bash/CMD may accept it more reliably):
+
+```powershell
+# Run a single test (PowerShell)
+$env:SPRING_PROFILES_ACTIVE = "dev"; mvn -Dtest=DevSecurityConfigTest test
+
+# Or (POSIX shells):
+mvn -Dspring.profiles.active=dev -Dtest=DevSecurityConfigTest test
+```
+
+Note: setting the environment variable in PowerShell avoids issues with argument ordering and ensures the Spring `dev` profile is active during test execution.
+
+JUnit XML Test Reports
+----------------------
+
+The Maven Surefire plugin is configured to emit JUnit-compatible XML reports into the `target/junit-reports` directory.
+
+To generate the XML reports locally (using the `dev` profile):
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "dev"
+mvn -DskipTests=false test
+```
+
+After the run, look for files matching `target/junit-reports/TEST-*.xml`. These can be consumed by CI systems (e.g., Jenkins, GitHub Actions) to display test results and trends.
+
+
 ### Running Tests
 ```bash
 # Run all tests
