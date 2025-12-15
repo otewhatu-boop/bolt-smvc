@@ -1,5 +1,9 @@
 package hdc.company.monitor.controller;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +36,15 @@ public class HomeController {
     public String loginPage(Model model) {
         model.addAttribute("version", getAppVersion());
         return "login";
+    }
+
+    @GetMapping(value = "/favicon.svg", produces = "image/svg+xml")
+    public ResponseEntity<Resource> favicon() {
+        Resource res = new ClassPathResource("/static/favicon.svg");
+        if (!res.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/svg+xml")).body(res);
     }
 
     private String getAppVersion() {

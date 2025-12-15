@@ -15,6 +15,7 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring6.view.ThymeleafViewResolver;
@@ -76,7 +77,7 @@ public class WebConfig implements WebMvcConfigurer {
         http
             .authenticationProvider(activeDirectoryLdapAuthenticationProvider())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/favicon.svg", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -107,7 +108,7 @@ public class WebConfig implements WebMvcConfigurer {
     public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/favicon.svg", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -120,4 +121,16 @@ public class WebConfig implements WebMvcConfigurer {
             );
         return http.build();
     }
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Serve favicon.svg from the classpath:/static/ directory
+        registry.addResourceHandler("/favicon.svg")
+            .addResourceLocations("classpath:/static/")
+                .setCachePeriod(3600);
+        // Also allow general static files under /static/**
+        registry.addResourceHandler("/static/**")
+                .addResourceLocations("classpath:/static/")
+                .setCachePeriod(3600);
+    }
+
 }
