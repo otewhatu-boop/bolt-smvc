@@ -16,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.spring6.view.ThymeleafViewResolver;
@@ -120,6 +121,21 @@ public class WebConfig implements WebMvcConfigurer {
                 .permitAll()
             );
         return http.build();
+    }
+
+    /**
+     * Ensure favicon and its common variants are ignored by Spring Security completely
+     * so that unauthenticated requests (e.g., browser automatic GETs) are not redirected
+     * to the login page.
+     */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring().requestMatchers(
+                "/favicon.ico",
+                "/favicon-16x16.png",
+                "/favicon-32x32.png",
+                "/favicon.svg"
+        );
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
