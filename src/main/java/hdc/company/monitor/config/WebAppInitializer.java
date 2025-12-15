@@ -8,7 +8,8 @@ public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServlet
     
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class<?>[] { SecurityConfig.class };
+        // No root context needed; all config is in servlet context
+        return null;
     }
     
     @Override

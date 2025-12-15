@@ -29,7 +29,8 @@ public class HomeController {
     }
 
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(Model model) {
+        model.addAttribute("version", getAppVersion());
         return "login";
     }
 
