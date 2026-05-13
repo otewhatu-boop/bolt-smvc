@@ -120,7 +120,8 @@
     <div class="container">
         <div class="welcome">
             <h2>Welcome to Monitor Centre</h2>
-            <p>This is the dashboard.</p>
+            <p th:if="${userName}">Hello, <span th:text="${userName}">User</span>!</p>
+            <p th:if="${userEmail}">Email: <span th:text="${userEmail}">email@example.com</span></p>
         </div>
     </div>
 

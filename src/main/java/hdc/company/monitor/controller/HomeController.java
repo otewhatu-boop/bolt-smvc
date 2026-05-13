@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,19 +15,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Principal;
 import java.util.Properties;
+
+import hdc.company.monitor.config.EntraIdProperties;
 
 @Controller
 public class HomeController {
+
+    private final EntraIdProperties entraIdProperties;
+    private final Environment environment;
+
+    public HomeController(EntraIdProperties entraIdProperties, Environment environment) {
+        this.entraIdProperties = entraIdProperties;
+        this.environment = environment;
+    }
     
     @GetMapping("/")
-    public String home(Model model) {
-        model.addAttribute("message", "Monitor Centre");
-        model.addAttribute("version", getAppVersion());
-        // if the user is authenticated, show their username
-        // SecurityContextHolder can be used in views directly via Thymeleaf extras if configured,
-        // but for simplicity we'll leave principal handling to the view layer for now.
-        return "home";
+    public String home(Model model, Principal principal) {
+        populateLoginModel(model);
+        if (principal != null) {
+            model.addAttribute("message", "Welcome back to Monitor Centre");
+            return "home";
+        }
+        return "login";
     }
 
     @PostMapping("/login")
@@ -37,8 +49,26 @@ public class HomeController {
 
     @GetMapping("/login")
     public String loginPage(Model model) {
-        model.addAttribute("version", getAppVersion());
+        populateLoginModel(model);
         return "login";
+    }
+
+    private void populateLoginModel(Model model) {
+        boolean profileAllowsEntra = !environment.acceptsProfiles("test");
+        boolean entraEnabled = entraIdProperties.isConfigured() && profileAllowsEntra;
+        model.addAttribute("version", getAppVersion());
+        model.addAttribute("entraEnabled", entraEnabled);
+        model.addAttribute("entraWarning", getEntraWarning(profileAllowsEntra));
+    }
+
+    private String getEntraWarning(boolean profileAllowsEntra) {
+        if (!entraIdProperties.isConfigured()) {
+            return "Azure EntraID is disabled because ENTRA_ID_CLIENT_ID, ENTRA_ID_CLIENT_SECRET and ENTRA_ID_TENANT_ID are not all configured.";
+        }
+        if (!profileAllowsEntra) {
+            return "Azure EntraID is disabled because the 'test' Spring profile is active.";
+        }
+        return null;
     }
 
     @GetMapping(value = "/favicon.svg", produces = "image/svg+xml")

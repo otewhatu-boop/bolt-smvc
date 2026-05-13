@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Profile - Monitor Centre</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
+    <link rel="shortcut icon" th:href="@{/favicon.svg}">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/favicon-32x32.png}">
+    <link rel="shortcut icon" th:href="@{/favicon.ico}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .menu-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.5rem;
+        }
+
+        .menu-items {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+        }
+
+        .menu-items a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .menu-items a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .menu-dropdown:hover .menu-items {
+            display: block;
+        }
+
+        .container {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .profile-info {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .profile-info h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .claims {
+            margin-top: 1rem;
+        }
+
+        .claims h3 {
+            color: #2c3e50;
+        }
+
+        .claims ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .claims li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .claims li:last-child {
+            border-bottom: none;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: auto;
+        }
+
+        footer p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Monitor Centre</h1>
+        <nav>
+            <div class="menu-dropdown">
+                <button class="menu-button" type="button">Menu ▾</button>
+                <div class="menu-items">
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/profile">Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="profile-info">
+            <h2>Profile Information</h2>
+            <p th:if="${user}">Name: <span th:text="${user.fullName}">Full Name</span></p>
+            <p th:if="${user}">Email: <span th:text="${user.email}">email@example.com</span></p>
+            <div class="claims" th:if="${claims}">
+                <h3>Claims</h3>
+                <ul>
+                    <li th:each="claim : ${claims}" th:text="${claim.key} + ': ' + ${claim.value}">Claim</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Version: <span th:text="${version}">0.0.0</span></p>
+    </footer>
+</body>
+</html>
