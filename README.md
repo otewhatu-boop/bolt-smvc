@@ -72,7 +72,7 @@ The Cobertura XML report is generated automatically during the package phase by 
 The `cargo-maven3-plugin` is configured in `pom.xml`, so you can run:
 
 ```bash
-mvn cargo:run
+mvn clean package cargo:run
 ```
 
 The application will be available at: `http://localhost:8080/smvc`
@@ -117,6 +117,10 @@ $env:ENTRA_ID_CLIENT_SECRET = "<your-client-secret>"
 $env:ENTRA_ID_TENANT_ID = "<your-tenant-id>"
 mvn cargo:run
 ```
+
+If not set, the application will start, but display a warning and login disabled.
+
+![alt text](entra-not-set.png)
 
 Run tests
 ---------
