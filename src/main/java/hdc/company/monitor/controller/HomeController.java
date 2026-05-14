@@ -31,7 +31,7 @@ public class HomeController {
         this.environment = environment;
     }
     
-    @GetMapping({"/", "/index.html"})
+    @GetMapping("/")
     public String home(Model model, Principal principal) {
         populateLoginModel(model);
         if (principal != null) {
