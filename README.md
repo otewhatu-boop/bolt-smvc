@@ -107,7 +107,9 @@ The application reads Azure EntraID configuration from `src/main/resources/entra
 - `ENTRA_ID_TENANT_ID` – your Azure tenant ID
 - `ENTRA_ID_REDIRECT_URI` – optional redirect URI (default: `http://localhost:8080/smvc/login/oauth2/code/entra`)
 
-Set all three required values and run the app to enable the EntraID/OAuth2 login flow.
+Set all three required values and run the app to enable the EntraID/OAuth2 login flow. If not set, the application will start, but display a warning and login disabled.
+
+![alt text](entra-not-set.png)
 
 For Cargo-based local launch, make sure the environment variables are defined in the same PowerShell session that starts Maven:
 
@@ -118,9 +120,9 @@ $env:ENTRA_ID_TENANT_ID = "<your-tenant-id>"
 mvn cargo:run
 ```
 
-If not set, the application will start, but display a warning and login disabled.
+Once set, the Sign in button will be presented
 
-![alt text](entra-not-set.png)
+![alt text](entra-set.png)
 
 Run tests
 ---------
