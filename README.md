@@ -56,7 +56,7 @@ Add the Tomcat plugin to your `pom.xml` if not already present, then run:
 mvn tomcat7:run
 ```
 
-The application will be available at: `http://localhost:8080/smvc`
+The application will be available at: `http://localhost:8080/monitor-centre`
 
 ### Option 2: Deploy to Standalone Tomcat
 
@@ -76,7 +76,7 @@ The application will be available at: `http://localhost:8080/smvc`
    ```
 
 3. **Access the application**
-   - URL: `http://localhost:8080/smvc`
+   - URL: `http://localhost:8080/monitor-centre`
    - Tomcat Manager: `http://localhost:8080/manager` (if configured)
 
 ### Option 3: Using IDE

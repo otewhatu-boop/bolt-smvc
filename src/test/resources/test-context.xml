@@ -14,7 +14,7 @@
     <mvc:annotation-driven/>
     
     <bean id="templateResolver" class="org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver">
-        <property name="prefix" value="classpath:/templates/"/>
+        <property name="prefix" value="/WEB-INF/templates/"/>
         <property name="suffix" value=".html"/>
         <property name="templateMode" value="HTML"/>
         <property name="characterEncoding" value="UTF-8"/>
