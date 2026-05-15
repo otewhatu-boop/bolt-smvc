@@ -88,8 +88,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web.ignoring().requestMatchers(
-                "/",
-                "/index.html",
                 "/favicon.ico",
                 "/favicon-16x16.png",
                 "/favicon-32x32.png",

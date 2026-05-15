@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Monitor Centre</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <div th:if="${param.error}" class="error">Authentication failed.</div>
+    <div th:if="${entraEnabled}">
+        <a th:href="@{/oauth2/authorization/entra}">Sign in with Azure EntraID</a>
+    </div>
+    <div th:unless="${entraEnabled}">
+        <span>Azure EntraID login unavailable</span>
+        <div th:text="${entraWarning}">Azure EntraID is disabled.</div>
+    </div>
+    <footer>
+        <p th:text="${version != null} ? 'Version: ' + ${version} : 'Version: 0.0.0'">Version: 0.0.0</p>
+    </footer>
+</body>
+</html>

@@ -87,6 +87,7 @@ public class SecurityConfig {
                     .userDetailsService(devUserDetailsService)
                     .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
@@ -110,6 +111,7 @@ public class SecurityConfig {
                     .authenticationProvider(ldapProvider)
                     .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
@@ -131,6 +133,7 @@ public class SecurityConfig {
             http
                 .authorizeHttpRequests(authorize -> authorize
                     .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
@@ -143,6 +146,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
