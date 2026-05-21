@@ -150,6 +150,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/oauth2/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
