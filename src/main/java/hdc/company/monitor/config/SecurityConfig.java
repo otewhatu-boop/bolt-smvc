@@ -16,6 +16,8 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
@@ -42,6 +44,7 @@ public class SecurityConfig {
         this.activeDirectoryLdapAuthenticationProvider = activeDirectoryLdapAuthenticationProvider;
         this.optionalUserDetailsService = optionalUserDetailsService;
     }
+
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
@@ -160,17 +163,21 @@ public class SecurityConfig {
         }
 
         http
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/oauth2/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(authorize -> {
+                if (!entraIdProperties.isConfigured()) {
+                    authorize.requestMatchers(new AntPathRequestMatcher("/oauth2/authorization/entra")).denyAll();
+                }
+                authorize
+                    .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/oauth2/**")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
+                    .anyRequest().authenticated();
+            })
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/login")
                 .defaultSuccessUrl("/dashboard", true)
