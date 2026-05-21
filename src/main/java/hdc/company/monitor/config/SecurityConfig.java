@@ -157,10 +157,6 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(oauth2 -> oauth2
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard", true)
-            )
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/")
