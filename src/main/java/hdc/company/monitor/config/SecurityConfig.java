@@ -87,6 +87,7 @@ public class SecurityConfig {
                     .userDetailsService(devUserDetailsService)
                     .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
@@ -111,6 +112,7 @@ public class SecurityConfig {
                     .authenticationProvider(ldapProvider)
                     .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
@@ -133,6 +135,7 @@ public class SecurityConfig {
             http
                 .authorizeHttpRequests(authorize -> authorize
                     .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                    .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
@@ -146,6 +149,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
