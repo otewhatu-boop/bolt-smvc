@@ -16,11 +16,31 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.FormHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.client.DefaultResponseErrorHandler;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.util.StreamUtils;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -53,7 +73,7 @@ public class SecurityConfig {
             ClientRegistration dummyRegistration = ClientRegistration.withRegistrationId("entra")
                     .clientId("dummy-client-id")
                     .clientSecret("dummy-client-secret")
-                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .redirectUri("http://localhost:8080/smvc/login/oauth2/code/entra")
                     .scope("openid", "profile", "email")
@@ -61,7 +81,7 @@ public class SecurityConfig {
                     .tokenUri("https://login.microsoftonline.com/dummy/oauth2/v2.0/token")
                     .jwkSetUri("https://login.microsoftonline.com/dummy/discovery/v2.0/keys")
                     .userInfoUri("https://graph.microsoft.com/oidc/userinfo")
-                    .userNameAttributeName("preferred_username")
+                    .userNameAttributeName("sub")
                     .build();
             return new InMemoryClientRegistrationRepository(dummyRegistration);
         }
@@ -69,7 +89,7 @@ public class SecurityConfig {
         ClientRegistration entraRegistration = ClientRegistration.withRegistrationId("entra")
                 .clientId(entraIdProperties.getClientId())
                 .clientSecret(entraIdProperties.getClientSecret())
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri(entraIdProperties.getRedirectUri())
                 .scope("openid", "profile", "email")
@@ -77,7 +97,7 @@ public class SecurityConfig {
                 .tokenUri("https://login.microsoftonline.com/" + entraIdProperties.getTenantId() + "/oauth2/v2.0/token")
                 .jwkSetUri("https://login.microsoftonline.com/" + entraIdProperties.getTenantId() + "/discovery/v2.0/keys")
                 .userInfoUri("https://graph.microsoft.com/oidc/userinfo")
-                .userNameAttributeName("preferred_username")
+                .userNameAttributeName("sub")
                 .build();
 
         return new InMemoryClientRegistrationRepository(entraRegistration);
@@ -179,8 +199,23 @@ public class SecurityConfig {
                     .anyRequest().authenticated();
             })
             .oauth2Login(oauth2 -> oauth2
+                .tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenResponseClient(authorizationCodeTokenResponseClient()))
                 .loginPage("/login")
                 .defaultSuccessUrl("/dashboard", true)
+                .failureHandler((request, response, exception) -> {
+                    String errorCode = "invalid_token_response";
+                    String errorDescription = exception.getMessage();
+                    if (exception instanceof OAuth2AuthenticationException authEx) {
+                        errorCode = authEx.getError().getErrorCode();
+                        errorDescription = authEx.getError().getDescription();
+                        if (errorDescription == null || errorDescription.isBlank()) {
+                            errorDescription = authEx.getError().toString();
+                        }
+                    }
+                    String encoded = URLEncoder.encode(errorCode + ": " + (errorDescription == null ? "unknown error" : errorDescription), StandardCharsets.UTF_8);
+                    logger.error("OAuth2 login failed: {} - {}", errorCode, errorDescription, exception);
+                    response.sendRedirect(request.getContextPath() + "/login?error=" + encoded);
+                })
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
@@ -189,6 +224,26 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient() {
+        DefaultAuthorizationCodeTokenResponseClient accessTokenResponseClient = new DefaultAuthorizationCodeTokenResponseClient();
+
+        RestTemplate restTemplate = new RestTemplate(Arrays.asList(
+                new FormHttpMessageConverter(),
+                new OAuth2AccessTokenResponseHttpMessageConverter()
+        ));
+        restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
+            @Override
+            public void handleError(ClientHttpResponse response) throws IOException {
+                String body = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+                logger.error("OAuth2 token endpoint returned error status {} with body: {}", response.getStatusCode(), body);
+                super.handleError(response);
+            }
+        });
+
+        accessTokenResponseClient.setRestOperations(restTemplate);
+        return accessTokenResponseClient;
     }
 
     private boolean hasActiveProfile(String profile) {
