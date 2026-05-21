@@ -47,7 +47,20 @@ public class SecurityConfig {
     public ClientRegistrationRepository clientRegistrationRepository() {
         if (!entraIdProperties.isConfigured()) {
             logger.warn("Azure EntraID is not configured. EntraID login will be disabled.");
-            return registrationId -> null;
+            ClientRegistration dummyRegistration = ClientRegistration.withRegistrationId("entra")
+                    .clientId("dummy-client-id")
+                    .clientSecret("dummy-client-secret")
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .redirectUri("http://localhost:8080/smvc/login/oauth2/code/entra")
+                    .scope("openid", "profile", "email")
+                    .authorizationUri("https://login.microsoftonline.com/dummy/oauth2/v2.0/authorize")
+                    .tokenUri("https://login.microsoftonline.com/dummy/oauth2/v2.0/token")
+                    .jwkSetUri("https://login.microsoftonline.com/dummy/discovery/v2.0/keys")
+                    .userInfoUri("https://graph.microsoft.com/oidc/userinfo")
+                    .userNameAttributeName("preferred_username")
+                    .build();
+            return new InMemoryClientRegistrationRepository(dummyRegistration);
         }
 
         ClientRegistration entraRegistration = ClientRegistration.withRegistrationId("entra")
@@ -157,6 +170,10 @@ public class SecurityConfig {
                 .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
                 .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard", true)
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
