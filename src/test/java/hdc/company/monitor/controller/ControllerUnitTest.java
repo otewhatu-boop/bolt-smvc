@@ -108,6 +108,7 @@ public class ControllerUnitTest {
         );
 
         OAuth2AuthorizedClientRepository repository = new OAuth2AuthorizedClientRepository() {
+            @SuppressWarnings("unchecked")
             @Override
             public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request) {
                 return (T) new OAuth2AuthorizedClient(clientRegistration, authentication.getName(), accessToken);
