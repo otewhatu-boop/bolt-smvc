@@ -19,7 +19,7 @@
         <junit.version>5.9.3</junit.version>
         <servlet.version>6.0.0</servlet.version>
         <thymeleaf.version>3.1.5.RELEASE</thymeleaf.version>
-        <spring.security.version>6.5.9</spring.security.version>
+        <spring.security.version>6.5.10</spring.security.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
