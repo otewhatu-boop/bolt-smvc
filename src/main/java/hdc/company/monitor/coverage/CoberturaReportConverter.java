@@ -2,7 +2,6 @@ package hdc.company.monitor.coverage;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -12,7 +11,6 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
@@ -98,7 +96,6 @@ public class CoberturaReportConverter {
                 for (int l = 0; l < lineNodes.getLength(); l++) {
                     Element lineNode = (Element) lineNodes.item(l);
                     int lineNumber = Integer.parseInt(lineNode.getAttribute("nr"));
-                    int missedInstructions = Integer.parseInt(lineNode.getAttribute("mi"));
                     int coveredInstructions = Integer.parseInt(lineNode.getAttribute("ci"));
                     int missedBranches = Integer.parseInt(lineNode.getAttribute("mb"));
                     int coveredBranches = Integer.parseInt(lineNode.getAttribute("cb"));

@@ -5,9 +5,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -71,13 +74,19 @@ public class WebConfig implements WebMvcConfigurer {
     // === DEVELOPMENT SECURITY CONFIG (Active when dev profile IS active) ===
     @Bean
     @Profile("dev")
-    public UserDetailsService devUsers() {
-        UserDetails user = User.withDefaultPasswordEncoder()
+    public UserDetailsService devUsers(PasswordEncoder passwordEncoder) {
+        UserDetails user = User.builder()
+                .passwordEncoder(passwordEncoder::encode)
                 .username("devuser")
                 .password("password")
                 .roles("USER")
                 .build();
         return new InMemoryUserDetailsManager(user);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     /**
@@ -95,7 +104,7 @@ public class WebConfig implements WebMvcConfigurer {
         );
     }
     @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         // Serve favicon.svg from the classpath:/static/ directory
         registry.addResourceHandler("/favicon.svg")
             .addResourceLocations("classpath:/static/")

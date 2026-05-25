@@ -18,31 +18,18 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
-import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
-import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.http.converter.FormHttpMessageConverter;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.client.DefaultResponseErrorHandler;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RestClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -124,13 +111,13 @@ public class SecurityConfig {
                 http
                     .userDetailsService(devUserDetailsService)
                     .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
+                        .requestMatchers("/login").permitAll()
+                        .requestMatchers("/login/oauth2/**").permitAll()
+                        .requestMatchers("/index.html").permitAll()
+                        .requestMatchers("/css/**").permitAll()
+                        .requestMatchers("/js/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/favicon.svg").permitAll()
                         .anyRequest().authenticated()
                     )
                     .formLogin(form -> form
@@ -149,13 +136,13 @@ public class SecurityConfig {
                 http
                     .authenticationProvider(ldapProvider)
                     .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
+                        .requestMatchers("/login").permitAll()
+                        .requestMatchers("/login/oauth2/**").permitAll()
+                        .requestMatchers("/index.html").permitAll()
+                        .requestMatchers("/css/**").permitAll()
+                        .requestMatchers("/js/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/favicon.svg").permitAll()
                         .anyRequest().authenticated()
                     )
                     .formLogin(form -> form
@@ -172,13 +159,13 @@ public class SecurityConfig {
 
             http
                 .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
+                    .requestMatchers("/login").permitAll()
+                    .requestMatchers("/login/oauth2/**").permitAll()
+                    .requestMatchers("/index.html").permitAll()
+                    .requestMatchers("/css/**").permitAll()
+                    .requestMatchers("/js/**").permitAll()
+                    .requestMatchers("/images/**").permitAll()
+                    .requestMatchers("/favicon.svg").permitAll()
                     .anyRequest().permitAll()
                 );
             return http.build();
@@ -187,17 +174,17 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> {
                 if (!entraIdProperties.isConfigured()) {
-                    authorize.requestMatchers(new AntPathRequestMatcher("/oauth2/authorization/entra")).denyAll();
+                    authorize.requestMatchers("/oauth2/authorization/entra").denyAll();
                 }
                 authorize
-                    .requestMatchers(new AntPathRequestMatcher("/login")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/oauth2/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/index.html")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/css/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/js/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/images/**")).permitAll()
-                    .requestMatchers(new AntPathRequestMatcher("/favicon.svg")).permitAll()
+                    .requestMatchers("/login").permitAll()
+                    .requestMatchers("/login/oauth2/**").permitAll()
+                    .requestMatchers("/oauth2/**").permitAll()
+                    .requestMatchers("/index.html").permitAll()
+                    .requestMatchers("/css/**").permitAll()
+                    .requestMatchers("/js/**").permitAll()
+                    .requestMatchers("/images/**").permitAll()
+                    .requestMatchers("/favicon.svg").permitAll()
                     .anyRequest().authenticated();
             })
             .oauth2Login(oauth2 -> oauth2
@@ -221,7 +208,7 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
+                .logoutRequestMatcher(request -> "GET".equalsIgnoreCase(request.getMethod()) && "/logout".equals(request.getServletPath()))
                 .logoutSuccessUrl("/")
                 .permitAll()
             );
@@ -235,22 +222,18 @@ public class SecurityConfig {
     }
 
     private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient() {
-        DefaultAuthorizationCodeTokenResponseClient accessTokenResponseClient = new DefaultAuthorizationCodeTokenResponseClient();
+        RestClientAuthorizationCodeTokenResponseClient accessTokenResponseClient = new RestClientAuthorizationCodeTokenResponseClient();
 
-        RestTemplate restTemplate = new RestTemplate(Arrays.asList(
-                new FormHttpMessageConverter(),
-                new OAuth2AccessTokenResponseHttpMessageConverter()
-        ));
-        restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
-            @Override
-            public void handleError(ClientHttpResponse response) throws IOException {
-                String body = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-                logger.error("OAuth2 token endpoint returned error status {} with body: {}", response.getStatusCode(), body);
-                super.handleError(response);
-            }
-        });
+        RestClient restClient = RestClient.builder()
+                .messageConverters(messageConverters -> {
+                    messageConverters.clear();
+                    messageConverters.add(new FormHttpMessageConverter());
+                    messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+                })
+                .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
+                .build();
 
-        accessTokenResponseClient.setRestOperations(restTemplate);
+        accessTokenResponseClient.setRestClient(restClient);
         return accessTokenResponseClient;
     }
 

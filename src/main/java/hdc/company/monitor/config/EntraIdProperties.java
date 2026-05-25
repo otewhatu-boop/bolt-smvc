@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 @Component
 public class EntraIdProperties {
@@ -47,14 +49,37 @@ public class EntraIdProperties {
 
     @PostConstruct
     public void logConfigurationStatus() {
-        String message = String.format("Azure EntraID config: clientIdSet=%s, tenantIdSet=%s, redirectUri=%s",
-                hasText(clientId), hasText(tenantId), redirectUri);
+        String clientSecretHash = hasText(clientSecret) ? sha256(clientSecret) : "NOT SET";
+        String message = String.format(
+            "Azure EntraID config: clientId=%s, tenantId=%s, clientSecretSHA256=%s, redirectUri=%s, isConfigured=%s",
+            clientId, tenantId, clientSecretHash, redirectUri, isConfigured());
         System.out.println(message);
         logger.info(message);
         if (!isConfigured()) {
-            String warning = "Azure EntraID is not fully configured. Required environment variables: ENTRA_ID_CLIENT_ID, ENTRA_ID_CLIENT_SECRET, ENTRA_ID_TENANT_ID";
+            String warning = String.format(
+                "Azure EntraID is not fully configured. Required environment variables: ENTRA_ID_CLIENT_ID=%s, ENTRA_ID_CLIENT_SECRET=%s, ENTRA_ID_TENANT_ID=%s",
+                hasText(clientId) ? "SET" : "NOT SET",
+                hasText(clientSecret) ? "SET" : "NOT SET",
+                hasText(tenantId) ? "SET" : "NOT SET");
             System.out.println(warning);
             logger.warn(warning);
+        }
+    }
+
+    private String sha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("SHA-256 algorithm not available", e);
+            return "ERROR";
         }
     }
 

@@ -7,7 +7,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +25,8 @@ import hdc.company.monitor.config.EntraIdProperties;
 
 @Controller
 public class HomeController {
+
+    private static final Logger logger = LoggerFactory.getLogger(HomeController.class);
 
     private final EntraIdProperties entraIdProperties;
     private final Environment environment;
@@ -54,11 +59,19 @@ public class HomeController {
     }
 
     private void populateLoginModel(Model model) {
-        boolean profileAllowsEntra = !environment.acceptsProfiles("test");
+        boolean profileAllowsEntra = !environment.acceptsProfiles(Profiles.of("test"));
         boolean entraEnabled = entraIdProperties.isConfigured() && profileAllowsEntra;
+        String entraWarning = getEntraWarning(profileAllowsEntra);
+
+        logger.info("Login page state: entraEnabled={}, profileAllowsEntra={}, entraConfigured={}, entraWarning={}",
+                entraEnabled,
+                profileAllowsEntra,
+                entraIdProperties.isConfigured(),
+                entraWarning);
+
         model.addAttribute("version", getAppVersion());
         model.addAttribute("entraEnabled", entraEnabled);
-        model.addAttribute("entraWarning", getEntraWarning(profileAllowsEntra));
+        model.addAttribute("entraWarning", entraWarning);
     }
 
     private String getEntraWarning(boolean profileAllowsEntra) {
@@ -104,14 +117,14 @@ public class HomeController {
     public ResponseEntity<?> favicon32() throws IOException {
         Resource res = new ClassPathResource("/static/favicon-32x32.png");
         if (res.exists()) {
-            return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(res);
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/png")).body(res);
         }
         try (var is = servletContext.getResourceAsStream("/favicon-32x32.png")) {
             if (is == null) {
                 return ResponseEntity.notFound().build();
             }
             InputStreamResource ir = new InputStreamResource(is);
-            return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(ir);
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/png")).body(ir);
         }
     }
 

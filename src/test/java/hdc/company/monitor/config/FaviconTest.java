@@ -1,7 +1,6 @@
 package hdc.company.monitor.config;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 
