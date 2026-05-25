@@ -44,4 +44,14 @@ public class HomeControllerTest {
                .andExpect(view().name("home"))
                .andExpect(model().attributeExists("message"));
     }
+
+    @Test
+    public void shouldReturnLoginView() throws Exception {
+        mockMvc.perform(get("/login"))
+               .andExpect(status().isOk())
+               .andExpect(view().name("login"))
+               .andExpect(model().attributeExists("version"))
+               .andExpect(model().attributeExists("entraEnabled"))
+               .andExpect(model().attributeExists("entraWarning"));
+    }
 }

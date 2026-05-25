@@ -8,7 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.ui.ExtendedModelMap;
@@ -18,8 +22,10 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ControllerUnitTest {
@@ -70,6 +76,61 @@ public class ControllerUnitTest {
         assertEquals("profile", view);
         assertEquals(oidcUser, model.get("user"));
         assertEquals(oidcUser.getClaims(), model.get("claims"));
+    }
+
+    @Test
+    void shouldPopulateAccessTokenInfoWhenAccessTokenIsNotJwt() {
+        OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "not-a-jwt",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Set.of("openid", "profile")
+        );
+
+        ClientRegistration clientRegistration = ClientRegistration.withRegistrationId("entra")
+                .clientId("client-id")
+                .clientSecret("client-secret")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                .authorizationUri("https://auth.example.com/oauth2/authorize")
+                .tokenUri("https://auth.example.com/oauth2/token")
+                .scope("openid", "profile")
+                .build();
+
+        OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(
+                new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                        new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("email", "jules@example.com")),
+                        "email"),
+                List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                "entra"
+        );
+
+        OAuth2AuthorizedClientRepository repository = new OAuth2AuthorizedClientRepository() {
+            @Override
+            public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request) {
+                return (T) new OAuth2AuthorizedClient(clientRegistration, authentication.getName(), accessToken);
+            }
+
+            @Override
+            public void saveAuthorizedClient(OAuth2AuthorizedClient authorizedClient, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
+            }
+
+            @Override
+            public void removeAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
+            }
+        };
+
+        ProfileController controller = new ProfileController(repository);
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller.profile(authentication, null, model);
+
+        assertEquals("profile", view);
+        assertNotNull(model.get("accessTokenJson"));
+        assertEquals("not-a-jwt", model.get("accessTokenValue"));
+        assertNotNull(model.get("accessTokenScopes"));
     }
 
     @Test
