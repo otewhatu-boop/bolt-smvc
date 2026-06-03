@@ -12,6 +12,7 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  checks: write
 
 jobs:
   analyze:
@@ -30,18 +31,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           languages: ${{ matrix.language }}
           build-mode: none
-
-      - name: Set up JDK
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
 
       - name: Build with Maven
         run: mvn clean package
@@ -50,3 +52,22 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "security"
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: JUnit Tests
+          path: target/junit-reports/*.xml
+          reporter: java-junit
+
+      - name: Jacoco Report to Summary
+        uses: madrapps/jacoco-report@v1.7.1
+        if: success() || failure()
+        with:
+          paths: target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-javadoc: 0
+          min-coverage-runtime: 0
+          title: Code Coverage Summary
+          update-comment: true
