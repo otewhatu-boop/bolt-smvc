@@ -68,11 +68,19 @@ jobs:
         with:
           paths: target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 0
-          title: Code Coverage
+          min-coverage-overall: 80
+          title: Code Coverage Summary
+          update-comment: true
           comment-type: summary
 
       - name: Prominent Coverage Summary
         if: success() || failure()
         run: |
           echo "## Overall Code Coverage: ${{ steps.jacoco.outputs.coverage-overall }}%" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if coverage is below 80%
+        if: (success() || failure()) && steps.jacoco.outputs.coverage-overall < 80
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.setFailed('Overall code coverage is ${{ steps.jacoco.outputs.coverage-overall }}%, which is below the 80% gate.')
