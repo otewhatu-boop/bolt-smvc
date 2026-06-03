@@ -13,16 +13,12 @@ permissions:
   actions: read
   security-events: write
   checks: write
+  pull-requests: write
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["java"]
 
     steps:
       - name: Checkout repository
@@ -42,7 +38,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          languages: ${{ matrix.language }}
+          languages: java
           build-mode: none
 
       - name: Build with Maven
@@ -54,7 +50,7 @@ jobs:
           category: "security"
 
       - name: Test Report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: success() || failure()
         with:
           name: JUnit Tests
@@ -62,12 +58,11 @@ jobs:
           reporter: java-junit
 
       - name: Jacoco Report to Summary
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.8.0
         if: success() || failure()
         with:
           paths: target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-javadoc: 0
-          min-coverage-runtime: 0
+          min-coverage-overall: 0
           title: Code Coverage Summary
           update-comment: true
