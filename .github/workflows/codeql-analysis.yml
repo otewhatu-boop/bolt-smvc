@@ -80,7 +80,7 @@ jobs:
 
       - name: Fail if coverage is below 80%
         if: (success() || failure()) && steps.jacoco.outputs.coverage-overall < 80
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             core.setFailed('Overall code coverage is ${{ steps.jacoco.outputs.coverage-overall }}%, which is below the 80% gate.')
