@@ -218,8 +218,8 @@ public class ControllerUnitTest {
     }
 
     @Test
-    void shouldHandleEmptySystemStatusList() {
-        DashboardController controller = new DashboardController(new EmptyStatusService());
+    void shouldHandleMissingBackendConfiguration() {
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -232,16 +232,8 @@ public class ControllerUnitTest {
         assertEquals("dashboard", view);
         assertNotNull(model.get("systemStatusList"));
         assertTrue(((List<?>) model.get("systemStatusList")).isEmpty());
-    }
-
-    private static final class EmptyStatusService extends StatusService {
-        EmptyStatusService() {
-            super(new MockEnvironment());
-        }
-
-        @Override
-        public List<hdc.company.monitor.model.SystemStatusItem> getSystemStatusList() {
-            return Collections.emptyList();
-        }
+        assertNotNull(model.get("statusConfigMissing"));
+        assertEquals(List.of(StatusService.STATUS_API_URL_ENV), model.get("statusConfigMissing"));
+        assertNull(model.get("statusFetchError"));
     }
 }

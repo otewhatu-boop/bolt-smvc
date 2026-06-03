@@ -22,6 +22,8 @@ public class DashboardController {
     public String dashboard(Principal principal, Model model) {
         model.addAttribute("version", getAppVersion());
         model.addAttribute("systemStatusList", statusService.getSystemStatusList());
+        model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
+        model.addAttribute("statusFetchError", statusService.getErrorMessage());
         if (principal instanceof OidcUser oidcUser) {
             model.addAttribute("userName", oidcUser.getFullName());
             model.addAttribute("userEmail", oidcUser.getEmail());
