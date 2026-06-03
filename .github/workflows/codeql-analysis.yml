@@ -35,7 +35,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           languages: ${{ matrix.language }}
-          build-mode: manual
+          build-mode: none
 
       - name: Set up JDK
         uses: actions/setup-java@v5
