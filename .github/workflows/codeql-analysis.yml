@@ -15,6 +15,9 @@ permissions:
   checks: write
   pull-requests: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   analyze:
     name: Analyze
@@ -22,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -56,13 +59,20 @@ jobs:
           name: JUnit Tests
           path: target/junit-reports/*.xml
           reporter: java-junit
+          list-tests: failed
 
       - name: Jacoco Report to Summary
+        id: jacoco
         uses: madrapps/jacoco-report@v1.8.0
         if: success() || failure()
         with:
           paths: target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 0
-          title: Code Coverage Summary
-          update-comment: true
+          title: Code Coverage
+          comment-type: summary
+
+      - name: Prominent Coverage Summary
+        if: success() || failure()
+        run: |
+          echo "## Overall Code Coverage: ${{ steps.jacoco.outputs.coverage-overall }}%" >> $GITHUB_STEP_SUMMARY
