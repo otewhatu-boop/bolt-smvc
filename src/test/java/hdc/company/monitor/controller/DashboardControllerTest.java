@@ -36,6 +36,7 @@ public class DashboardControllerTest {
         mockMvc.perform(get("/dashboard"))
                .andExpect(status().isOk())
                .andExpect(view().name("dashboard"))
-               .andExpect(model().attributeExists("version"));
+               .andExpect(model().attributeExists("version"))
+               .andExpect(model().attributeExists("systemStatusList"));
     }
 }

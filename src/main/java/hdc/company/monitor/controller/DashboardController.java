@@ -1,6 +1,7 @@
 package hdc.company.monitor.controller;
 
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import hdc.company.monitor.service.StatusService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,9 +12,16 @@ import java.util.Properties;
 @Controller
 public class DashboardController {
 
+    private final StatusService statusService;
+
+    public DashboardController(StatusService statusService) {
+        this.statusService = statusService;
+    }
+
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, Model model) {
         model.addAttribute("version", getAppVersion());
+        model.addAttribute("systemStatusList", statusService.getSystemStatusList());
         if (principal instanceof OidcUser oidcUser) {
             model.addAttribute("userName", oidcUser.getFullName());
             model.addAttribute("userEmail", oidcUser.getEmail());

@@ -88,6 +88,52 @@
             margin-top: 0;
         }
 
+        .status-panel {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .status-panel h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .status-panel table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .status-panel th,
+        .status-panel td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e1e1e1;
+        }
+
+        .status-panel th {
+            background-color: #f7f9fb;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        .status-badge.online { background-color: #27ae60; }
+        .status-badge.offline { background-color: #c0392b; }
+        .status-badge.maintenance { background-color: #f39c12; }
+        .status-badge.degraded { background-color: #d35400; }
+
         footer {
             background-color: #2c3e50;
             color: white;
@@ -122,6 +168,33 @@
             <h2>Welcome to Monitor Centre</h2>
             <p th:if="${userName}">Hello, <span th:text="${userName}">User</span>!</p>
             <p th:if="${userEmail}">Email: <span th:text="${userEmail}">email@example.com</span></p>
+        </div>
+
+        <div class="status-panel">
+            <h2>System Status</h2>
+            <div th:if="${systemStatusList != null and !#lists.isEmpty(systemStatusList)}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>System ID</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="status : ${systemStatusList}">
+                            <td th:text="${status.systemId}">system-001</td>
+                            <td>
+                                <span class="status-badge" th:classappend=" ' ' + ${status.status}">
+                                    <span th:text="${status.status}">online</span>
+                                </span>
+                            </td>
+                            <td th:text="${status.updatedAt}">2025-12-14 10:30:45</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p th:if="${systemStatusList == null or #lists.isEmpty(systemStatusList)}">No system status records available.</p>
         </div>
     </div>
 

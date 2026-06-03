@@ -15,18 +15,23 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.ui.ExtendedModelMap;
 
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import hdc.company.monitor.service.StatusService;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ControllerUnitTest {
 
@@ -38,7 +43,7 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnDashboardAndPopulateOidcUserAttributes() {
-        DashboardController controller = new DashboardController();
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("preferred_username", "jules", "email", "jules@example.com", "name", "Jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
 
@@ -197,7 +202,7 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnDashboardViewWhenPrincipalIsNotOidcUser() {
-        DashboardController controller = new DashboardController();
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -210,5 +215,33 @@ public class ControllerUnitTest {
         assertEquals("dashboard", view);
         assertNull(model.get("userName"));
         assertNull(model.get("userEmail"));
+    }
+
+    @Test
+    void shouldHandleEmptySystemStatusList() {
+        DashboardController controller = new DashboardController(new EmptyStatusService());
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        String view = controller.dashboard(new Principal() {
+            @Override
+            public String getName() {
+                return "anonymous";
+            }
+        }, model);
+
+        assertEquals("dashboard", view);
+        assertNotNull(model.get("systemStatusList"));
+        assertTrue(((List<?>) model.get("systemStatusList")).isEmpty());
+    }
+
+    private static final class EmptyStatusService extends StatusService {
+        EmptyStatusService() {
+            super(new MockEnvironment());
+        }
+
+        @Override
+        public List<hdc.company.monitor.model.SystemStatusItem> getSystemStatusList() {
+            return Collections.emptyList();
+        }
     }
 }
