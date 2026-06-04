@@ -85,6 +85,17 @@ jobs:
           script: |
             core.setFailed('Overall code coverage is ${{ steps.jacoco.outputs.coverage-overall }}%, which is below the 80% gate.')
 
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
         if: success() || failure()
@@ -117,3 +128,54 @@ jobs:
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
           category: 'grype'
+
+      - name: Security Summary
+        if: success() || failure()
+        run: |
+          echo "### Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f trivy-results.sarif ]; then
+            TRIVY_COUNT=$(jq '[.runs[].results[]] | length' trivy-results.sarif)
+            echo "- **Trivy Findings:** $TRIVY_COUNT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Trivy Findings:** N/A" >> $GITHUB_STEP_SUMMARY
+          fi
+          GRYPE_SARIF="${{ steps.grype-scan.outputs.sarif }}"
+          if [ -f "$GRYPE_SARIF" ]; then
+            GRYPE_COUNT=$(jq '[.runs[].results[]] | length' "$GRYPE_SARIF")
+            echo "- **Grype Findings:** $GRYPE_COUNT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Grype Findings:** N/A" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  conclusion:
+    name: Conclusion
+    needs: [analyze, security]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Workflow Conclusion
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const analyzeStatus = "${{ needs.analyze.result }}";
+            const securityStatus = "${{ needs.security.result }}";
+
+            const results = [
+              { job: "Analyze", status: analyzeStatus },
+              { job: "Security", status: securityStatus }
+            ];
+
+            let summary = "## Workflow Results Summary\n\n";
+            summary += "| Job | Status |\n";
+            summary += "| --- | --- |\n";
+
+            results.forEach(res => {
+              const icon = res.status === 'success' ? '✅' : (res.status === 'failure' ? '❌' : '⚠️');
+              summary += `| ${res.job} | ${icon} ${res.status} |\n`;
+            });
+
+            await core.summary.addRaw(summary).write();
+
+            if (analyzeStatus !== 'success' || securityStatus !== 'success') {
+              core.setFailed('One or more jobs in the workflow failed.');
+            }
