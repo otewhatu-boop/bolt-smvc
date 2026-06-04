@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoberturaReportConverterTest {
@@ -34,6 +35,17 @@ public class CoberturaReportConverterTest {
 
         Element packageElement = (Element) packageNodes.item(0);
         assertEquals("hdc/company/monitor/util", packageElement.getAttribute("name"), "Output should preserve package element");
+    }
+
+    @Test
+    void shouldHandleMissingJacocoFile(@TempDir Path tempDir) throws Exception {
+        Path missingJacoco = tempDir.resolve("non-existent.xml");
+        Path coberturaXml = tempDir.resolve("coverage.xml");
+
+        // Should not throw exception or exit with error
+        CoberturaReportConverter.main(new String[]{missingJacoco.toString(), coberturaXml.toString()});
+
+        assertFalse(Files.exists(coberturaXml), "Cobertura XML should not be created for missing input");
     }
 
     @Test
