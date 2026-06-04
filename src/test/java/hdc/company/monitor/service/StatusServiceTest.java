@@ -4,8 +4,10 @@ import hdc.company.monitor.model.SystemStatusItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.env.MockEnvironment;
@@ -14,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
@@ -63,18 +66,19 @@ class StatusServiceTest {
 
     @Test
     void getSystemStatusList_whenSuccessful_returnsList() {
-        String url = "http://localhost/api";
-        environment.setProperty(StatusService.STATUS_API_URL_ENV, url);
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
         SystemStatusItem[] items = {
             new SystemStatusItem("sys1", "UP", "2023-01-01T00:00:00Z"),
             new SystemStatusItem("sys2", "DOWN", "2023-01-01T00:00:01Z")
         };
-        when(restTemplate.getForEntity(eq(url), eq(SystemStatusItem[].class)))
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
             .thenReturn(new ResponseEntity<>(items, HttpStatus.OK));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList();
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
         assertEquals(2, result.size());
         assertEquals("sys1", result.get(0).getSystemId());
@@ -84,14 +88,15 @@ class StatusServiceTest {
 
     @Test
     void getSystemStatusList_whenApiReturnsError_returnsEmptyListAndSetsError() {
-        String url = "http://localhost/api";
-        environment.setProperty(StatusService.STATUS_API_URL_ENV, url);
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
-        when(restTemplate.getForEntity(eq(url), eq(SystemStatusItem[].class)))
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
             .thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList();
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
         assertTrue(result.isEmpty());
         assertTrue(statusService.hasError());
@@ -100,14 +105,15 @@ class StatusServiceTest {
 
     @Test
     void getSystemStatusList_whenExceptionOccurs_returnsEmptyListAndSetsError() {
-        String url = "http://localhost/api";
-        environment.setProperty(StatusService.STATUS_API_URL_ENV, url);
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
-        when(restTemplate.getForEntity(eq(url), eq(SystemStatusItem[].class)))
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
             .thenThrow(new RuntimeException("Connection refused"));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList();
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
         assertTrue(result.isEmpty());
         assertTrue(statusService.hasError());

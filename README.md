@@ -106,8 +106,9 @@ The application reads Azure EntraID configuration from `src/main/resources/entra
 - `ENTRA_ID_CLIENT_SECRET` – your Azure application client secret
 - `ENTRA_ID_TENANT_ID` – your Azure tenant ID
 - `ENTRA_ID_REDIRECT_URI` – optional redirect URI (default: `http://localhost:8080/smvc/login/oauth2/code/entra`)
+- `STATUS_API_URL` – base URL for the backend status API. e.g. `http://localhost:8000/` The application automatically appends `status.php` to this value for dashboard status requests.
 
-Set all three required values and run the app to enable the EntraID/OAuth2 login flow. If not set, the application will start, but display a warning and login disabled.
+Set all required values and run the app to enable the EntraID/OAuth2 login flow and backend status lookup. If `STATUS_API_URL` is not set, the status dashboard will not call the backend API.
 
 ![alt text](entra-not-set.png)
 
