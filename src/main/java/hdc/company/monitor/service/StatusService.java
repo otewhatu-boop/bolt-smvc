@@ -3,6 +3,7 @@ package hdc.company.monitor.service;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,17 @@ public class StatusService {
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
     public static final String STATUS_API_URL_PROPERTY = "status.api.url";
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final String statusApiUrl;
     private String lastErrorMessage = null;
 
+    @Autowired
     public StatusService(Environment environment) {
+        this(environment, new RestTemplate());
+    }
+
+    public StatusService(Environment environment, RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
         String envUrl = environment.getProperty(STATUS_API_URL_ENV);
         String propertyUrl = environment.getProperty(STATUS_API_URL_PROPERTY);
         this.statusApiUrl = envUrl != null && !envUrl.isBlank() ? envUrl : (propertyUrl != null && !propertyUrl.isBlank() ? propertyUrl : null);

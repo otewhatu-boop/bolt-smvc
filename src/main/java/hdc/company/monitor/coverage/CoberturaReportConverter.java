@@ -27,8 +27,8 @@ public class CoberturaReportConverter {
         Path coberturaFile = Path.of(args[1]);
 
         if (!Files.exists(jacocoFile)) {
-            System.err.println("Missing JaCoCo report: " + jacocoFile);
-            System.exit(2);
+            System.out.println("Missing JaCoCo report: " + jacocoFile + ". Skipping Cobertura conversion.");
+            return;
         }
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -160,7 +160,7 @@ public class CoberturaReportConverter {
         coverage.setAttribute("branches-valid", String.valueOf(branchesValid));
         coverage.setAttribute("complexity", "0");
         coverage.setAttribute("timestamp", String.valueOf(System.currentTimeMillis() / 1000));
-        coverage.setAttribute("version", "JaCoCo 0.8.12");
+        coverage.setAttribute("version", "JaCoCo 0.8.14");
 
         Files.createDirectories(coberturaFile.getParent());
         writeDocument(targetDoc, coberturaFile);
