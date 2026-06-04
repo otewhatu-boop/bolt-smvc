@@ -12,40 +12,75 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  checks: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["java"]
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          languages: ${{ matrix.language }}
-
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          languages: java
+          build-mode: none
 
       - name: Build with Maven
         run: mvn clean package
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "security"
+
+      - name: Test Report
+        uses: dorny/test-reporter@v3
+        if: success() || failure()
+        with:
+          name: JUnit Tests
+          path: target/junit-reports/*.xml
+          reporter: java-junit
+          list-tests: failed
+
+      - name: Jacoco Report to Summary
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.8.0
+        if: success() || failure()
+        with:
+          paths: target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 80
+          title: Code Coverage Summary
+          update-comment: true
+          comment-type: summary
+
+      - name: Prominent Coverage Summary
+        if: success() || failure()
+        run: |
+          echo "## Overall Code Coverage: ${{ steps.jacoco.outputs.coverage-overall }}%" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if coverage is below 80%
+        if: (success() || failure()) && steps.jacoco.outputs.coverage-overall < 80
+        uses: actions/github-script@v9
+        with:
+          script: |
+            core.setFailed('Overall code coverage is ${{ steps.jacoco.outputs.coverage-overall }}%, which is below the 80% gate.')
