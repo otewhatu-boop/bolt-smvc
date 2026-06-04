@@ -84,3 +84,36 @@ jobs:
         with:
           script: |
             core.setFailed('Overall code coverage is ${{ steps.jacoco.outputs.coverage-overall }}%, which is below the 80% gate.')
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        if: success() || failure()
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: success() || failure()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy'
+
+      - name: Run Grype vulnerability scanner
+        id: grype-scan
+        uses: anchore/scan-action@v7
+        if: success() || failure()
+        with:
+          path: "."
+          output-format: sarif
+          severity-cutoff: high
+
+      - name: Upload Grype scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: success() || failure()
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: 'grype'
