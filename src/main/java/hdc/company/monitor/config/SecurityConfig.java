@@ -22,6 +22,8 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResp
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
@@ -219,6 +221,11 @@ public class SecurityConfig {
     @Bean
     public OAuth2AuthorizedClientRepository authorizedClientRepository() {
         return new HttpSessionOAuth2AuthorizedClientRepository();
+    }
+
+    @Bean
+    public OAuth2AuthorizedClientService authorizedClientService(ClientRegistrationRepository clientRegistrationRepository) {
+        return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
     }
 
     private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> authorizationCodeTokenResponseClient() {
