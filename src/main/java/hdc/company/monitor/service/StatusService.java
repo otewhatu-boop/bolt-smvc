@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -19,6 +22,7 @@ public class StatusService {
 
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
     public static final String STATUS_API_URL_PROPERTY = "status.api.url";
+    public static final String STATUS_API_PATH = "status.php";
 
     private final RestTemplate restTemplate;
     private final String statusApiUrl;
@@ -33,7 +37,8 @@ public class StatusService {
         this.restTemplate = restTemplate;
         String envUrl = environment.getProperty(STATUS_API_URL_ENV);
         String propertyUrl = environment.getProperty(STATUS_API_URL_PROPERTY);
-        this.statusApiUrl = envUrl != null && !envUrl.isBlank() ? envUrl : (propertyUrl != null && !propertyUrl.isBlank() ? propertyUrl : null);
+        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : (propertyUrl != null && !propertyUrl.isBlank() ? propertyUrl : null);
+        this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
 
         if (statusApiUrl != null) {
             logger.info("STATUS_API_URL resolved to [{}]", statusApiUrl);
@@ -42,7 +47,18 @@ public class StatusService {
         }
     }
 
-    public List<SystemStatusItem> getSystemStatusList() {
+    private static String normalizeStatusApiUrl(String rawUrl) {
+        String normalized = rawUrl.trim();
+        if (normalized.endsWith(STATUS_API_PATH)) {
+            return normalized;
+        }
+        if (normalized.endsWith("/")) {
+            return normalized + STATUS_API_PATH;
+        }
+        return normalized + "/" + STATUS_API_PATH;
+    }
+
+    public List<SystemStatusItem> getSystemStatusList(String accessToken) {
         lastErrorMessage = null;
         
         if (statusApiUrl == null) {
@@ -51,8 +67,17 @@ public class StatusService {
         }
 
         try {
+            HttpHeaders headers = new HttpHeaders();
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+                logger.debug("Authorization header added to status API request");
+            } else {
+                logger.warn("No access token available for status API request; proceeding without authorization");
+            }
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
             logger.info("Calling backend system status API at {}", statusApiUrl);
-            ResponseEntity<SystemStatusItem[]> response = restTemplate.getForEntity(statusApiUrl, SystemStatusItem[].class);
+            ResponseEntity<SystemStatusItem[]> response = restTemplate.exchange(statusApiUrl, HttpMethod.GET, entity, SystemStatusItem[].class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 logger.info("Backend system status API returned {} items", response.getBody().length);
                 return List.of(response.getBody());
@@ -64,6 +89,10 @@ public class StatusService {
             lastErrorMessage = "Error fetching status: " + ex.getMessage();
         }
         return Collections.emptyList();
+    }
+
+    public List<SystemStatusItem> getSystemStatusList() {
+        return getSystemStatusList(null);
     }
 
     public boolean isConfigured() {

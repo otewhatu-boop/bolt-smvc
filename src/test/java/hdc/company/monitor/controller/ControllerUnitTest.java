@@ -7,21 +7,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.ui.ExtendedModelMap;
 
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class ControllerUnitTest {
 
@@ -43,12 +44,13 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnDashboardAndPopulateOidcUserAttributes() {
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("preferred_username", "jules", "email", "jules@example.com", "name", "Jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
 
         ExtendedModelMap model = new ExtendedModelMap();
-        String view = controller.dashboard(oidcUser, model);
+        String view = controller.dashboard(oidcUser, new MockHttpServletRequest(), model);
 
         assertEquals("dashboard", view);
         assertEquals("Jules", model.get("userName"));
@@ -202,7 +204,8 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnDashboardViewWhenPrincipalIsNotOidcUser() {
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -210,7 +213,7 @@ public class ControllerUnitTest {
             public String getName() {
                 return "anonymous";
             }
-        }, model);
+        }, new MockHttpServletRequest(), model);
 
         assertEquals("dashboard", view);
         assertNull(model.get("userName"));
@@ -219,7 +222,8 @@ public class ControllerUnitTest {
 
     @Test
     void shouldHandleMissingBackendConfiguration() {
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()));
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -227,7 +231,7 @@ public class ControllerUnitTest {
             public String getName() {
                 return "anonymous";
             }
-        }, model);
+        }, new MockHttpServletRequest(), model);
 
         assertEquals("dashboard", view);
         assertNotNull(model.get("systemStatusList"));
