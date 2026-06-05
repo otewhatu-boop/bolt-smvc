@@ -74,11 +74,6 @@ public class StatusService {
             } else {
                 logger.warn("No access token available for status API request; proceeding without authorization");
             }
-<<<<<<< HEAD
-            
-=======
-
->>>>>>> main
             HttpEntity<String> entity = new HttpEntity<>(headers);
             logger.info("Calling backend system status API at {}", statusApiUrl);
             ResponseEntity<SystemStatusItem[]> response = restTemplate.exchange(statusApiUrl, HttpMethod.GET, entity, SystemStatusItem[].class);
