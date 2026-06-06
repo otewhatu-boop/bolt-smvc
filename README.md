@@ -81,24 +81,6 @@ The application will be available at: `http://localhost:8080/smvc`
 
 ## Development Workflow
 
-## Active Directory authentication
-
-This application can authenticate users against an Active Directory (AD) server using LDAP.
-
-Configuration
-- The AD domain and LDAP URL can be configured via Spring `@Value` properties (defaults shown):
-
-```properties
-ad.domain=hdc.webhop.net
-ad.url=ldap://hdc.webhop.net/
-```
-
-If your AD requires TLS, change the URL to `ldaps://hdc.webhop.net:636/` and ensure the container trusts the AD server certificate.
-
-Notes
-- The app uses `ActiveDirectoryLdapAuthenticationProvider` which performs a direct bind with the provided username and password.
-- Username formats accepted by AD commonly include `DOMAIN\\username` or `username@domain` depending on your AD configuration.
-
 ### Azure EntraID environment variables
 The application reads Azure EntraID configuration from `src/main/resources/entra-id.properties`, which resolves these environment variables:
 

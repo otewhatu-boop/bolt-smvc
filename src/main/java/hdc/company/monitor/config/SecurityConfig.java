@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +25,6 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.http.converter.FormHttpMessageConverter;
@@ -35,7 +34,6 @@ import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebSecurity
-@Profile("!test") // Use EntraID for production and dev
 @PropertySource("classpath:entra-id.properties")
 public class SecurityConfig {
 
@@ -43,16 +41,13 @@ public class SecurityConfig {
 
     private final EntraIdProperties entraIdProperties;
     private final Environment environment;
-    private final ObjectProvider<ActiveDirectoryLdapAuthenticationProvider> activeDirectoryLdapAuthenticationProvider;
     private final ObjectProvider<UserDetailsService> optionalUserDetailsService;
 
     public SecurityConfig(EntraIdProperties entraIdProperties,
                           Environment environment,
-                          ObjectProvider<ActiveDirectoryLdapAuthenticationProvider> activeDirectoryLdapAuthenticationProvider,
                           ObjectProvider<UserDetailsService> optionalUserDetailsService) {
         this.entraIdProperties = entraIdProperties;
         this.environment = environment;
-        this.activeDirectoryLdapAuthenticationProvider = activeDirectoryLdapAuthenticationProvider;
         this.optionalUserDetailsService = optionalUserDetailsService;
     }
 
@@ -106,49 +101,11 @@ public class SecurityConfig {
             logger.warn(warning);
 
             boolean isDevProfile = hasActiveProfile("dev");
-            ActiveDirectoryLdapAuthenticationProvider ldapProvider = activeDirectoryLdapAuthenticationProvider.getIfAvailable();
             UserDetailsService devUserDetailsService = optionalUserDetailsService.getIfAvailable();
 
             if (isDevProfile && devUserDetailsService != null) {
                 http
                     .userDetailsService(devUserDetailsService)
-                    .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/login/oauth2/**").permitAll()
-                        .requestMatchers("/index.html").permitAll()
-                        .requestMatchers("/css/**").permitAll()
-                        .requestMatchers("/js/**").permitAll()
-                        .requestMatchers("/images/**").permitAll()
-                        .requestMatchers("/favicon.svg").permitAll()
-                        .anyRequest().authenticated()
-                    )
-                    .formLogin(form -> form
-                        .loginPage("/login")
-                        .permitAll()
-                    )
-                    .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
-                        .addLogoutHandler((request, response, authentication) -> {
-                            if (authentication != null && authorizedClientService != null) {
-                                try {
-                                    authorizedClientService.removeAuthorizedClient("entra", authentication.getName());
-                                } catch (Exception e) {
-                                    logger.warn("Failed to remove authorized client on logout", e);
-                                }
-                            }
-                        })
-                        .permitAll()
-                    );
-
-                return http.build();
-            }
-
-            if (ldapProvider != null) {
-                http
-                    .authenticationProvider(ldapProvider)
                     .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login").permitAll()
                         .requestMatchers("/login/oauth2/**").permitAll()
