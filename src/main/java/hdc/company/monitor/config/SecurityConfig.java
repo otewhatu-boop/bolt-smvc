@@ -6,11 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -41,14 +39,11 @@ public class SecurityConfig {
 
     private final EntraIdProperties entraIdProperties;
     private final Environment environment;
-    private final ObjectProvider<UserDetailsService> optionalUserDetailsService;
 
     public SecurityConfig(EntraIdProperties entraIdProperties,
-                          Environment environment,
-                          ObjectProvider<UserDetailsService> optionalUserDetailsService) {
+                          Environment environment) {
         this.entraIdProperties = entraIdProperties;
         this.environment = environment;
-        this.optionalUserDetailsService = optionalUserDetailsService;
     }
 
 
@@ -96,49 +91,9 @@ public class SecurityConfig {
         System.out.println(activeProfilesMessage);
         logger.info(activeProfilesMessage);
         if (!entraIdProperties.isConfigured()) {
-            String warning = "Azure EntraID is not configured. Falling back to local authentication or permissive mode.";
+            String warning = "Azure EntraID is not configured. Falling back to permissive mode.";
             System.out.println(warning);
             logger.warn(warning);
-
-            boolean isDevProfile = hasActiveProfile("dev");
-            UserDetailsService devUserDetailsService = optionalUserDetailsService.getIfAvailable();
-
-            if (isDevProfile && devUserDetailsService != null) {
-                http
-                    .userDetailsService(devUserDetailsService)
-                    .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/login/oauth2/**").permitAll()
-                        .requestMatchers("/index.html").permitAll()
-                        .requestMatchers("/css/**").permitAll()
-                        .requestMatchers("/js/**").permitAll()
-                        .requestMatchers("/images/**").permitAll()
-                        .requestMatchers("/favicon.svg").permitAll()
-                        .anyRequest().authenticated()
-                    )
-                    .formLogin(form -> form
-                        .loginPage("/login")
-                        .permitAll()
-                    )
-                    .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID")
-                        .addLogoutHandler((request, response, authentication) -> {
-                            if (authentication != null && authorizedClientService != null) {
-                                try {
-                                    authorizedClientService.removeAuthorizedClient("entra", authentication.getName());
-                                } catch (Exception e) {
-                                    logger.warn("Failed to remove authorized client on logout", e);
-                                }
-                            }
-                        })
-                        .permitAll()
-                    );
-
-                return http.build();
-            }
 
             http
                 .authorizeHttpRequests(authorize -> authorize
@@ -156,9 +111,6 @@ public class SecurityConfig {
 
         http
             .authorizeHttpRequests(authorize -> {
-                if (!entraIdProperties.isConfigured()) {
-                    authorize.requestMatchers("/oauth2/authorization/entra").denyAll();
-                }
                 authorize
                     .requestMatchers("/login").permitAll()
                     .requestMatchers("/login/oauth2/**").permitAll()
@@ -235,14 +187,5 @@ public class SecurityConfig {
 
         accessTokenResponseClient.setRestClient(restClient);
         return accessTokenResponseClient;
-    }
-
-    private boolean hasActiveProfile(String profile) {
-        for (String activeProfile : environment.getActiveProfiles()) {
-            if (profile.equalsIgnoreCase(activeProfile)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
