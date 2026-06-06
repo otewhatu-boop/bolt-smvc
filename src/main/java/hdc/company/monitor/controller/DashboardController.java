@@ -27,7 +27,6 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpServletRequest request, Model model) {
         model.addAttribute("version", getAppVersion());
-
         String accessToken = null;
         try {
             if (principal != null) {
@@ -40,7 +39,6 @@ public class DashboardController {
         } catch (Exception ex) {
             // Token extraction failed, will proceed without token
         }
-
         model.addAttribute("systemStatusList", statusService.getSystemStatusList(accessToken));
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         model.addAttribute("statusFetchError", statusService.getErrorMessage());

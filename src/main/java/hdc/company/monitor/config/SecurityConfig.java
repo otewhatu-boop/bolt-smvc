@@ -67,7 +67,7 @@ public class SecurityConfig {
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .redirectUri("http://localhost:8080/smvc/login/oauth2/code/entra")
-                    .scope("openid", "profile", "email")
+                    .scope("openid", "profile", "email", entraIdProperties.getApiScope())
                     .authorizationUri("https://login.microsoftonline.com/dummy/oauth2/v2.0/authorize")
                     .tokenUri("https://login.microsoftonline.com/dummy/oauth2/v2.0/token")
                     .jwkSetUri("https://login.microsoftonline.com/dummy/discovery/v2.0/keys")
@@ -83,7 +83,7 @@ public class SecurityConfig {
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri(entraIdProperties.getRedirectUri())
-                .scope("openid", "profile", "email")
+                .scope("openid", "profile", "email", entraIdProperties.getApiScope())
                 .authorizationUri("https://login.microsoftonline.com/" + entraIdProperties.getTenantId() + "/oauth2/v2.0/authorize")
                 .tokenUri("https://login.microsoftonline.com/" + entraIdProperties.getTenantId() + "/oauth2/v2.0/token")
                 .jwkSetUri("https://login.microsoftonline.com/" + entraIdProperties.getTenantId() + "/discovery/v2.0/keys")
@@ -95,7 +95,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, OAuth2AuthorizedClientService authorizedClientService) throws Exception {
         String profiles = String.join(",", environment.getActiveProfiles());
         String activeProfilesMessage = "Active Spring profiles: " + profiles;
         System.out.println(activeProfilesMessage);
@@ -128,6 +128,18 @@ public class SecurityConfig {
                     )
                     .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .addLogoutHandler((request, response, authentication) -> {
+                            if (authentication != null && authorizedClientService != null) {
+                                try {
+                                    authorizedClientService.removeAuthorizedClient("entra", authentication.getName());
+                                } catch (Exception e) {
+                                    logger.warn("Failed to remove authorized client on logout", e);
+                                }
+                            }
+                        })
                         .permitAll()
                     );
 
@@ -153,6 +165,18 @@ public class SecurityConfig {
                     )
                     .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .addLogoutHandler((request, response, authentication) -> {
+                            if (authentication != null && authorizedClientService != null) {
+                                try {
+                                    authorizedClientService.removeAuthorizedClient("entra", authentication.getName());
+                                } catch (Exception e) {
+                                    logger.warn("Failed to remove authorized client on logout", e);
+                                }
+                            }
+                        })
                         .permitAll()
                     );
 
@@ -211,6 +235,18 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutRequestMatcher(request -> "GET".equalsIgnoreCase(request.getMethod()) && "/logout".equals(request.getServletPath()))
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .addLogoutHandler((request, response, authentication) -> {
+                    if (authentication != null && authorizedClientService != null) {
+                        try {
+                            authorizedClientService.removeAuthorizedClient("entra", authentication.getName());
+                        } catch (Exception e) {
+                            logger.warn("Failed to remove authorized client on logout", e);
+                        }
+                    }
+                })
                 .logoutSuccessUrl("/")
                 .permitAll()
             );
