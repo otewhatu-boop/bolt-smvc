@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,47 +86,32 @@ public class HomeController {
     }
 
     @GetMapping(value = "/favicon.svg", produces = "image/svg+xml")
-    public ResponseEntity<Resource> favicon() {
-        Resource res = new ClassPathResource("/static/favicon.svg");
-        if (!res.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/svg+xml")).body(res);
+    @ResponseBody
+    public Resource favicon() {
+        return new ClassPathResource("static/favicon.svg");
     }
 
     @Autowired
     private ServletContext servletContext;
 
     @GetMapping(value = "/favicon.ico", produces = "image/x-icon")
-    public ResponseEntity<?> faviconIco() throws IOException {
-        // Try classpath first
-        Resource res = new ClassPathResource("/static/favicon.ico");
+    @ResponseBody
+    public Resource faviconIco() {
+        Resource res = new ClassPathResource("static/favicon.ico");
         if (res.exists()) {
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/x-icon")).body(res);
+            return res;
         }
-        // Fallback to servlet context resource (webapp root)
-        try (var is = servletContext.getResourceAsStream("/favicon.ico")) {
-            if (is == null) {
-                return ResponseEntity.notFound().build();
-            }
-            InputStreamResource ir = new InputStreamResource(is);
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/x-icon")).body(ir);
-        }
+        return new org.springframework.web.context.support.ServletContextResource(servletContext, "/favicon.ico");
     }
 
     @GetMapping(value = "/favicon-32x32.png", produces = "image/png")
-    public ResponseEntity<?> favicon32() throws IOException {
-        Resource res = new ClassPathResource("/static/favicon-32x32.png");
+    @ResponseBody
+    public Resource favicon32() {
+        Resource res = new ClassPathResource("static/favicon-32x32.png");
         if (res.exists()) {
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/png")).body(res);
+            return res;
         }
-        try (var is = servletContext.getResourceAsStream("/favicon-32x32.png")) {
-            if (is == null) {
-                return ResponseEntity.notFound().build();
-            }
-            InputStreamResource ir = new InputStreamResource(is);
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("image/png")).body(ir);
-        }
+        return new org.springframework.web.context.support.ServletContextResource(servletContext, "/favicon-32x32.png");
     }
 
     private String getAppVersion() {

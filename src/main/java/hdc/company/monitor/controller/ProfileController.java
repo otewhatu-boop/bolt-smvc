@@ -1,11 +1,8 @@
 package hdc.company.monitor.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -17,23 +14,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.lang.reflect.Array;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 @Controller
 public class ProfileController {
 
-    private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
-
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ProfileController(OAuth2AuthorizedClientRepository authorizedClientRepository) {
         this.authorizedClientRepository = authorizedClientRepository;
@@ -92,48 +81,8 @@ public class ProfileController {
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
         } catch (Exception ex) {
-            logger.warn("Unable to render token claims as JSON; falling back to string values", ex);
-            try {
-                return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(normalizeClaimValue(value));
-            } catch (Exception fallbackEx) {
-                logger.error("Fallback JSON conversion failed", fallbackEx);
-                String message = fallbackEx.getMessage();
-                return String.format("{\"error\":\"unable to render token claims\", \"message\": \"%s\"}",
-                        message == null ? "unknown" : message.replace("\"", "\\\""));
-            }
+            return "{\"error\":\"unable to render token claims\"}";
         }
-    }
-
-    private Object normalizeClaimValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Map<?, ?> map) {
-            Map<String, Object> normalized = new LinkedHashMap<>();
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                normalized.put(String.valueOf(entry.getKey()), normalizeClaimValue(entry.getValue()));
-            }
-            return normalized;
-        }
-        if (value instanceof Collection<?> collection) {
-            List<Object> normalized = new ArrayList<>();
-            for (Object item : collection) {
-                normalized.add(normalizeClaimValue(item));
-            }
-            return normalized;
-        }
-        if (value.getClass().isArray()) {
-            List<Object> normalized = new ArrayList<>();
-            int length = Array.getLength(value);
-            for (int i = 0; i < length; i++) {
-                normalized.add(normalizeClaimValue(Array.get(value, i)));
-            }
-            return normalized;
-        }
-        if (value instanceof Date date) {
-            return Instant.ofEpochMilli(date.getTime()).toString();
-        }
-        return value;
     }
 
     private String getAppVersion() {

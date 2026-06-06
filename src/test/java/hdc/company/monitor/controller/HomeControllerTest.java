@@ -10,13 +10,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import hdc.company.monitor.config.SecurityConfig;
 import java.util.Objects;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringJUnitWebConfig(locations = "/test-context.xml")
+@SpringJUnitWebConfig(locations = {"/test-context.xml"})
+@org.springframework.context.annotation.Import(SecurityConfig.class)
 @TestPropertySource(properties = {
         "entra.client.id=",
         "entra.client.secret=",
@@ -53,5 +55,24 @@ public class HomeControllerTest {
                .andExpect(model().attributeExists("version"))
                .andExpect(model().attributeExists("entraEnabled"))
                .andExpect(model().attributeExists("entraWarning"));
+    }
+
+    @Test
+    public void shouldReturnFaviconSvg() throws Exception {
+        mockMvc.perform(get("/favicon.svg"))
+               .andExpect(status().isOk())
+               .andExpect(content().contentType("image/svg+xml"));
+    }
+
+    @Test
+    public void shouldReturnFaviconIco() throws Exception {
+        mockMvc.perform(get("/favicon.ico"))
+               .andExpect(status().isOk());
+    }
+
+    @Test
+    public void shouldReturnFavicon32() throws Exception {
+        mockMvc.perform(get("/favicon-32x32.png"))
+               .andExpect(status().isOk());
     }
 }
