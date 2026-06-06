@@ -46,6 +46,7 @@ public class ProfileController {
         if (authentication instanceof OAuth2AuthenticationToken oauth2Authentication
                 && oauth2Authentication.getPrincipal() instanceof OidcUser oidcUser) {
             model.addAttribute("user", oidcUser);
+            model.addAttribute("claims", oidcUser.getClaims());
             model.addAttribute("idTokenJson", prettyPrintJson(oidcUser.getIdToken().getClaims()));
             model.addAttribute("idTokenValue", oidcUser.getIdToken().getTokenValue());
 
