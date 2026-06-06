@@ -159,12 +159,6 @@
             <h2>Profile Information</h2>
             <p th:if="${user}">Name: <span th:text="${user.fullName}">Full Name</span></p>
             <p th:if="${user}">Email: <span th:text="${user.email}">email@example.com</span></p>
-            <div class="claims" th:if="${claims}">
-                <h3>Claims</h3>
-                <ul>
-                    <li th:each="claim : ${claims}" th:text="${claim.key} + ': ' + ${claim.value}">Claim</li>
-                </ul>
-            </div>
             <div class="token-block" th:if="${idTokenJson}">
                 <h3>Identity Token (ID Token)</h3>
                 <pre th:text="${idTokenJson}">Loading ID token JSON...</pre>
