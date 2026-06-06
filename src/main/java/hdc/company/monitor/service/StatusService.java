@@ -11,6 +11,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +44,30 @@ public class StatusService {
         String propertyUrl = environment.getProperty(STATUS_API_URL_PROPERTY);
         String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : (propertyUrl != null && !propertyUrl.isBlank() ? propertyUrl : null);
         this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
+
+        // Ensure RestTemplate can read JSON even when server responds with text/html
+        try {
+            List<HttpMessageConverter<?>> converters = this.restTemplate.getMessageConverters();
+            boolean jacksonFound = false;
+            for (HttpMessageConverter<?> c : converters) {
+                if (c instanceof MappingJackson2HttpMessageConverter mj) {
+                    jacksonFound = true;
+                    List<MediaType> types = new ArrayList<>(mj.getSupportedMediaTypes());
+                    if (!types.contains(MediaType.TEXT_HTML)) {
+                        types.add(MediaType.TEXT_HTML);
+                        mj.setSupportedMediaTypes(types);
+                    }
+                    break;
+                }
+            }
+            if (!jacksonFound) {
+                MappingJackson2HttpMessageConverter mj = new MappingJackson2HttpMessageConverter();
+                mj.setSupportedMediaTypes(List.of(MediaType.APPLICATION_JSON, MediaType.TEXT_HTML));
+                this.restTemplate.getMessageConverters().add(0, mj);
+            }
+        } catch (Exception ex) {
+            logger.warn("Unable to configure RestTemplate message converters to accept text/html", ex);
+        }
 
         if (statusApiUrl != null) {
             logger.info("STATUS_API_URL resolved to [{}]", statusApiUrl);

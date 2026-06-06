@@ -25,8 +25,15 @@ public class EntraIdProperties {
     @Value("${entra.redirect.uri:http://localhost:8080/smvc/login/oauth2/code/entra}")
     private String redirectUri;
 
+    @Value("${entra.api.scope:6b7af4a5-5be2-4f0b-91c4-b71cb9c04129/.default}")
+    private String apiScope;
+
     public String getClientId() {
         return clientId;
+    }
+
+    public String getApiScope() {
+        return apiScope;
     }
 
     public String getClientSecret() {
