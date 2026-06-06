@@ -1,6 +1,7 @@
 package hdc.company.monitor.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,7 @@ public class ProfileController {
 
     public ProfileController(OAuth2AuthorizedClientRepository authorizedClientRepository) {
         this.authorizedClientRepository = authorizedClientRepository;
+        this.objectMapper.registerModule(new JavaTimeModule());
     }
 
     @GetMapping("/profile")
@@ -35,8 +37,8 @@ public class ProfileController {
         if (authentication instanceof OAuth2AuthenticationToken oauth2Authentication
                 && oauth2Authentication.getPrincipal() instanceof OidcUser oidcUser) {
             model.addAttribute("user", oidcUser);
-            model.addAttribute("claims", oidcUser.getClaims());
-            model.addAttribute("idTokenJson", prettyPrintJson(oidcUser.getIdToken().getClaims()));
+            model.addAttribute("claims", normalizeClaims(oidcUser.getClaims()));
+            model.addAttribute("idTokenJson", prettyPrintJson(normalizeClaims(oidcUser.getIdToken().getClaims())));
             model.addAttribute("idTokenValue", oidcUser.getIdToken().getTokenValue());
 
             OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
@@ -71,10 +73,40 @@ public class ProfileController {
     private String parseJwtClaims(String token) {
         try {
             JWT jwt = JWTParser.parse(token);
-            return prettyPrintJson(jwt.getJWTClaimsSet().getClaims());
+            return prettyPrintJson(normalizeClaims(jwt.getJWTClaimsSet().getClaims()));
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> normalizeClaims(Map<String, Object> claims) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        if (claims == null) return out;
+        for (Map.Entry<String, Object> e : claims.entrySet()) {
+            out.put(e.getKey(), normalizeClaimValue(e.getValue()));
+        }
+        return out;
+    }
+
+    private Object normalizeClaimValue(Object value) {
+        if (value == null) return null;
+        if (value instanceof java.util.Date) {
+            return ((java.util.Date) value).toInstant().toString();
+        }
+        if (value instanceof java.time.Instant) {
+            return value.toString();
+        }
+        if (value instanceof Map) {
+            // recursive normalize
+            return normalizeClaims((Map<String, Object>) value);
+        }
+        if (value instanceof Iterable) {
+            java.util.List<Object> list = new java.util.ArrayList<>();
+            for (Object o : (Iterable<?>) value) list.add(normalizeClaimValue(o));
+            return list;
+        }
+        return value;
     }
 
     private String prettyPrintJson(Object value) {
