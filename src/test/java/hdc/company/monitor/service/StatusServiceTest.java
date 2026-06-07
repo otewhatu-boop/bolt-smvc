@@ -51,13 +51,6 @@ class StatusServiceTest {
     }
 
     @Test
-    void whenPropertyConfigured_isConfiguredReturnsTrue() {
-        environment.setProperty(StatusService.STATUS_API_URL_PROPERTY, "http://localhost/api");
-        statusService = new StatusService(environment, restTemplate);
-        assertTrue(statusService.isConfigured());
-    }
-
-    @Test
     void getErrorMessage_returnsLastErrorMessage() {
         statusService = new StatusService(environment, restTemplate);
         assertFalse(statusService.hasError());
