@@ -26,7 +26,6 @@ public class StatusService {
     private static final Logger logger = LoggerFactory.getLogger(StatusService.class);
 
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
-    public static final String STATUS_API_URL_PROPERTY = "status.api.url";
     public static final String STATUS_API_PATH = "status.php";
 
     private final RestTemplate restTemplate;
@@ -41,8 +40,7 @@ public class StatusService {
     public StatusService(Environment environment, RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
         String envUrl = environment.getProperty(STATUS_API_URL_ENV);
-        String propertyUrl = environment.getProperty(STATUS_API_URL_PROPERTY);
-        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : (propertyUrl != null && !propertyUrl.isBlank() ? propertyUrl : null);
+        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
         this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
 
         // Ensure RestTemplate can read JSON even when server responds with text/html

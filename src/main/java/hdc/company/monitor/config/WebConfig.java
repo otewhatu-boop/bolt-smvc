@@ -1,17 +1,11 @@
 package hdc.company.monitor.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.lang.NonNull;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -25,9 +19,6 @@ import org.thymeleaf.spring6.view.ThymeleafViewResolver;
 @ComponentScan("hdc.company.monitor")
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${app.profile:prod}")
-    private String appProfile;
-    
     @Bean
     public SpringResourceTemplateResolver templateResolver() {
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
@@ -51,19 +42,6 @@ public class WebConfig implements WebMvcConfigurer {
         resolver.setTemplateEngine(templateEngine());
         resolver.setCharacterEncoding("UTF-8");
         return resolver;
-    }
-
-    // === DEVELOPMENT SECURITY CONFIG (Active when dev profile IS active) ===
-    @Bean
-    @Profile("dev")
-    public UserDetailsService devUsers(PasswordEncoder passwordEncoder) {
-        UserDetails user = User.builder()
-                .passwordEncoder(passwordEncoder::encode)
-                .username("devuser")
-                .password("password")
-                .roles("USER")
-                .build();
-        return new InMemoryUserDetailsManager(user);
     }
 
     @Bean
