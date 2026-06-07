@@ -89,8 +89,12 @@ The application reads Azure EntraID configuration from `src/main/resources/entra
 - `ENTRA_ID_TENANT_ID` – your Azure tenant ID
 - `ENTRA_ID_REDIRECT_URI` – optional redirect URI (default: `http://localhost:8080/smvc/login/oauth2/code/entra`)
 - `STATUS_API_URL` – base URL for the backend status API. e.g. `http://localhost:8000/` The application automatically appends `status.php` to this value for dashboard status requests.
+- `PHP_API_SCOPE` - the scope required for the backend PHP API (default: `api://bf53ad5f-760d-40e8-a6db-467eacada791/access_as_user`). Used in the On-Behalf-Of flow.
 
 Set all required values and run the app to enable the EntraID/OAuth2 login flow and backend status lookup. If `STATUS_API_URL` is not set, the status dashboard will not call the backend API.
+
+### Microsoft EntraID On-Behalf-Of (OBO) Flow
+The application implements the Microsoft EntraID On-Behalf-Of (OBO) flow. When a user logs in, the application receives an initial access token. This token is then exchanged for a new access token specifically for the PHP API using the `PHP_API_SCOPE`. This API-specific token is passed as the Bearer token in the `Authorization` header when calling the backend status API.
 
 ![alt text](entra-not-set.png)
 

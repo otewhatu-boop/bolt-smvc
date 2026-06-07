@@ -4,6 +4,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
+import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,29 +18,35 @@ import java.util.Properties;
 public class DashboardController {
 
     private final StatusService statusService;
+    private final EntraIdOboService oboService;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-    public DashboardController(StatusService statusService, OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    public DashboardController(StatusService statusService,
+                               EntraIdOboService oboService,
+                               OAuth2AuthorizedClientRepository authorizedClientRepository) {
         this.statusService = statusService;
+        this.oboService = oboService;
         this.authorizedClientRepository = authorizedClientRepository;
     }
 
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpServletRequest request, Model model) {
         model.addAttribute("version", getAppVersion());
-        String accessToken = null;
+        String initialAccessToken = null;
+        String apiAccessToken = null;
         try {
             if (principal != null) {
                 OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
                     "entra", SecurityContextHolder.getContext().getAuthentication(), request);
                 if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-                    accessToken = authorizedClient.getAccessToken().getTokenValue();
+                    initialAccessToken = authorizedClient.getAccessToken().getTokenValue();
+                    apiAccessToken = oboService.getOboToken(initialAccessToken);
                 }
             }
         } catch (Exception ex) {
-            // Token extraction failed, will proceed without token
+            // Token extraction or OBO exchange failed, will proceed
         }
-        model.addAttribute("systemStatusList", statusService.getSystemStatusList(accessToken));
+        model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         model.addAttribute("statusFetchError", statusService.getErrorMessage());
         if (principal instanceof OidcUser oidcUser) {
