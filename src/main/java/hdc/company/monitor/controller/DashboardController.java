@@ -3,7 +3,7 @@ package hdc.company.monitor.controller;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 import org.springframework.stereotype.Controller;
@@ -35,9 +35,9 @@ public class DashboardController {
         String initialAccessToken = null;
         String apiAccessToken = null;
         try {
-            if (principal != null) {
+            if (principal instanceof Authentication authentication) {
                 OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
-                    "entra", SecurityContextHolder.getContext().getAuthentication(), request);
+                    "entra", authentication, request);
                 if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
                     initialAccessToken = authorizedClient.getAccessToken().getTokenValue();
                     apiAccessToken = oboService.getOboToken(initialAccessToken);
@@ -46,7 +46,12 @@ public class DashboardController {
         } catch (Exception ex) {
             // Token extraction or OBO exchange failed, will proceed
         }
-        model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
+
+        // If OBO exchange failed or returned null, fall back to initial access token
+        // to ensure an Authorization header is sent if possible.
+        String tokenToUse = (apiAccessToken != null) ? apiAccessToken : initialAccessToken;
+
+        model.addAttribute("systemStatusList", statusService.getSystemStatusList(tokenToUse));
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         model.addAttribute("statusFetchError", statusService.getErrorMessage());
         if (principal instanceof OidcUser oidcUser) {

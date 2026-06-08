@@ -4,11 +4,13 @@ import hdc.company.monitor.config.EntraIdProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.Map;
 
 @Service
@@ -22,6 +24,7 @@ public class EntraIdOboService {
     public EntraIdOboService(EntraIdProperties properties) {
         this.properties = properties;
         this.restTemplate = new RestTemplate();
+        this.restTemplate.getMessageConverters().add(0, new MappingJackson2HttpMessageConverter());
     }
 
     /**
@@ -42,6 +45,7 @@ public class EntraIdOboService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
@@ -54,7 +58,7 @@ public class EntraIdOboService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
         try {
-            logger.info("Requesting OBO token for scope: {}", properties.getPhpApiScope());
+            logger.info("Requesting OBO token for scope: {} from {}", properties.getPhpApiScope(), url);
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String oboToken = (String) response.getBody().get("access_token");
@@ -62,10 +66,12 @@ public class EntraIdOboService {
                     logger.info("Successfully obtained OBO token");
                     return oboToken;
                 }
+                logger.warn("OBO response successful but access_token is missing. Body: {}", response.getBody());
+            } else {
+                logger.error("Failed to get OBO token. Status: {}, Body: {}", response.getStatusCode(), response.getBody());
             }
-            logger.error("Failed to get OBO token. Status: {}, Body: {}", response.getStatusCode(), response.getBody());
         } catch (Exception e) {
-            logger.error("Error during OBO token exchange: {}", e.getMessage());
+            logger.error("Error during OBO token exchange with {}: {}", url, e.getMessage(), e);
         }
 
         return null;
