@@ -54,15 +54,21 @@ public class ProfileController {
                 model.addAttribute("accessTokenScopes", accessToken.getScopes());
 
                 // Perform OBO exchange for the profile screen introspection
-                String oboTokenValue = oboService.getOboToken(accessToken.getTokenValue());
-                if (oboTokenValue != null) {
-                    model.addAttribute("oboTokenValue", oboTokenValue);
-                    String oboClaimsJson = parseJwtClaims(oboTokenValue);
-                    if (oboClaimsJson != null) {
-                        model.addAttribute("oboTokenJson", oboClaimsJson);
+                try {
+                    String oboTokenValue = oboService.getOboToken(accessToken.getTokenValue());
+                    if (oboTokenValue != null) {
+                        model.addAttribute("oboTokenValue", oboTokenValue);
+                        String oboClaimsJson = parseJwtClaims(oboTokenValue);
+                        if (oboClaimsJson != null) {
+                            model.addAttribute("oboTokenJson", oboClaimsJson);
+                        } else {
+                            model.addAttribute("oboTokenJson", "{\"info\": \"Token is not a parseable JWT\"}");
+                        }
                     } else {
-                        model.addAttribute("oboTokenJson", "{\"info\": \"Token is not a parseable JWT\"}");
+                        model.addAttribute("oboError", "Failed to obtain OBO token. Check logs for details.");
                     }
+                } catch (Exception e) {
+                    model.addAttribute("oboError", "Error during OBO exchange: " + e.getMessage());
                 }
             }
         }
