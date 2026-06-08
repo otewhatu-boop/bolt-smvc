@@ -121,7 +121,7 @@ jobs:
         with:
           path: "."
           output-format: sarif
-          sarif-file: 'grype-results.sarif'
+          output-file: 'grype-results.sarif'
           severity-cutoff: high
 
       - name: Upload Grype scan results to GitHub Security tab
