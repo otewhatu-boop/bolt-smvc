@@ -2,6 +2,39 @@
 
 A Spring MVC web application for monitoring and management, built with Java 17 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
 
+## On-Behalf-Of (OBO) flow
+
+EntraID login issues a GraphQL access token, this is then used to retrieve the API access token.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Spring as Spring MVC
+    participant Entra as Entra ID
+    participant PHP as PHP API
+
+    User->>Spring: Access application
+
+    Spring->>Entra: Redirect (authorization request)
+    User->>Entra: Login with credentials
+    Entra-->>Spring: Authorization code
+
+    Spring->>Entra: Code exchange\n(grant_type=authorization_code)
+    Entra-->>Spring: ID token + access token\n(aud=Spring client)
+
+    Spring-->>User: Authenticated session
+
+    User->>Spring: Request health status
+
+    Spring->>Entra: OBO exchange\n(assertion=user token,\nscope=api://bf53ad5f-.../access_as_user)
+    Entra-->>Spring: New access token\n(aud=api://bf53ad5f-...)
+
+    Spring->>PHP: Bearer token (OBO token)
+    PHP-->>Spring: Health data
+
+    Spring-->>User: Display health status
+```
+
 ## Prerequisites
 
 Before running this application locally, ensure you have the following installed:
