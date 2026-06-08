@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
+import hdc.company.monitor.service.EntraIdOboService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -23,10 +24,13 @@ import java.util.Properties;
 public class ProfileController {
 
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+    private final EntraIdOboService oboService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ProfileController(OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    public ProfileController(OAuth2AuthorizedClientRepository authorizedClientRepository,
+                             EntraIdOboService oboService) {
         this.authorizedClientRepository = authorizedClientRepository;
+        this.oboService = oboService;
         this.objectMapper.registerModule(new JavaTimeModule());
     }
 
@@ -48,6 +52,18 @@ public class ProfileController {
                 model.addAttribute("accessTokenJson", introspectToken(accessToken));
                 model.addAttribute("accessTokenValue", accessToken.getTokenValue());
                 model.addAttribute("accessTokenScopes", accessToken.getScopes());
+
+                // Perform OBO exchange for the profile screen introspection
+                String oboTokenValue = oboService.getOboToken(accessToken.getTokenValue());
+                if (oboTokenValue != null) {
+                    model.addAttribute("oboTokenValue", oboTokenValue);
+                    String oboClaimsJson = parseJwtClaims(oboTokenValue);
+                    if (oboClaimsJson != null) {
+                        model.addAttribute("oboTokenJson", oboClaimsJson);
+                    } else {
+                        model.addAttribute("oboTokenJson", "{\"info\": \"Token is not a parseable JWT\"}");
+                    }
+                }
             }
         }
 

@@ -47,11 +47,7 @@ public class DashboardController {
             // Token extraction or OBO exchange failed, will proceed
         }
 
-        // If OBO exchange failed or returned null, fall back to initial access token
-        // to ensure an Authorization header is sent if possible.
-        String tokenToUse = (apiAccessToken != null) ? apiAccessToken : initialAccessToken;
-
-        model.addAttribute("systemStatusList", statusService.getSystemStatusList(tokenToUse));
+        model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         model.addAttribute("statusFetchError", statusService.getErrorMessage());
         if (principal instanceof OidcUser oidcUser) {
