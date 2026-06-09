@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,7 +46,8 @@ public class ControllerUnitTest {
     @Test
     void shouldReturnDashboardAndPopulateOidcUserAttributes() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("preferred_username", "jules", "email", "jules@example.com", "name", "Jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
 
@@ -59,6 +61,7 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnProfileAndPopulateClaimsForOidcUser() {
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
         ProfileController controller = new ProfileController(new OAuth2AuthorizedClientRepository() {
             @Override
             public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request) {
@@ -72,7 +75,7 @@ public class ControllerUnitTest {
             @Override
             public void removeAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
             }
-        });
+        }, oboService);
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("email", "jules@example.com", "preferred_username", "jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
         OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(oidcUser, oidcUser.getAuthorities(), "entra");
@@ -87,6 +90,7 @@ public class ControllerUnitTest {
 
     @Test
     void shouldPopulateAccessTokenInfoWhenAccessTokenIsNotJwt() {
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
         OAuth2AccessToken accessToken = new OAuth2AccessToken(
                 OAuth2AccessToken.TokenType.BEARER,
                 "not-a-jwt",
@@ -130,7 +134,7 @@ public class ControllerUnitTest {
             }
         };
 
-        ProfileController controller = new ProfileController(repository);
+        ProfileController controller = new ProfileController(repository, oboService);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.profile(authentication, null, model);
@@ -143,6 +147,7 @@ public class ControllerUnitTest {
 
     @Test
     void shouldReturnProfileViewWhenPrincipalIsNotOidcUser() {
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
         ProfileController controller = new ProfileController(new OAuth2AuthorizedClientRepository() {
             @Override
             public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request) {
@@ -156,7 +161,7 @@ public class ControllerUnitTest {
             @Override
             public void removeAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
             }
-        });
+        }, oboService);
         ExtendedModelMap model = new ExtendedModelMap();
 
         Authentication authentication = new Authentication() {
@@ -205,7 +210,8 @@ public class ControllerUnitTest {
     @Test
     void shouldReturnDashboardViewWhenPrincipalIsNotOidcUser() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -223,7 +229,8 @@ public class ControllerUnitTest {
     @Test
     void shouldHandleMissingBackendConfiguration() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), authorizedClientRepository);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {

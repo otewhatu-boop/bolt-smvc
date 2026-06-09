@@ -89,8 +89,22 @@ The application reads Azure EntraID configuration from `src/main/resources/entra
 - `ENTRA_ID_TENANT_ID` – your Azure tenant ID
 - `ENTRA_ID_REDIRECT_URI` – optional redirect URI (default: `http://localhost:8080/smvc/login/oauth2/code/entra`)
 - `STATUS_API_URL` – base URL for the backend status API. e.g. `http://localhost:8000/` The application automatically appends `status.php` to this value for dashboard status requests.
+- `PHP_API_SCOPE` - the scope required for the backend PHP API (default: `api://bf53ad5f-760d-40e8-a6db-467eacada791/access_as_user`). Used in the On-Behalf-Of flow.
 
 Set all required values and run the app to enable the EntraID/OAuth2 login flow and backend status lookup. If `STATUS_API_URL` is not set, the status dashboard will not call the backend API.
+
+### Microsoft EntraID On-Behalf-Of (OBO) Flow
+The application implements the Microsoft EntraID On-Behalf-Of (OBO) flow. When a user logs in, the application receives an initial access token. This token is then exchanged for a new access token specifically for the PHP API using the `PHP_API_SCOPE`. This API-specific token is passed as the Bearer token in the `Authorization` header when calling the backend status API.
+
+#### Troubleshooting OBO Errors
+
+1. **AADSTS65001: The user or administrator has not consented to use the application**
+   - This occurs if the application does not have permission to request a token for the target API on behalf of the user.
+   - **Fix:** Go to the Azure Portal -> Microsoft Entra ID -> App Registrations. Find the 'Monitor Centre' registration. Go to **API Permissions**, click **Add a permission**, select **APIs my organization uses**, search for your PHP API, and add the `access_as_user` scope. Finally, click **Grant admin consent for [Your Org]**.
+
+2. **AADSTS70011: .default scope can't be combined with resource-specific scopes**
+   - This occurs if you attempt to request both the Graph API default scope and the PHP API specific scope in the initial login request.
+   - **Fix:** The application is configured to only request standard OIDC scopes and the Graph `.default` scope during login. The PHP API scope is only used during the server-side OBO exchange. Do not add the PHP API scope to the initial login scopes in `SecurityConfig`. Ensure it is only configured via the `PHP_API_SCOPE` environment variable.
 
 ![alt text](entra-not-set.png)
 

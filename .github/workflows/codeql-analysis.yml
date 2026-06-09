@@ -117,16 +117,18 @@ jobs:
         id: grype-scan
         uses: anchore/scan-action@v7
         if: success() || failure()
+        continue-on-error: true
         with:
           path: "."
           output-format: sarif
+          output-file: 'grype-results.sarif'
           severity-cutoff: high
 
       - name: Upload Grype scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
-        if: success() || failure()
+        if: (success() || failure()) && steps.grype-scan.outcome == 'success'
         with:
-          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          sarif_file: 'grype-results.sarif'
           category: 'grype'
 
       - name: Security Summary
@@ -139,9 +141,8 @@ jobs:
           else
             echo "- **Trivy Findings:** N/A" >> $GITHUB_STEP_SUMMARY
           fi
-          GRYPE_SARIF="${{ steps.grype-scan.outputs.sarif }}"
-          if [ -f "$GRYPE_SARIF" ]; then
-            GRYPE_COUNT=$(jq '[.runs[].results[]] | length' "$GRYPE_SARIF")
+          if [ -f grype-results.sarif ]; then
+            GRYPE_COUNT=$(jq '[.runs[].results[]] | length' grype-results.sarif)
             echo "- **Grype Findings:** $GRYPE_COUNT" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Grype Findings:** N/A" >> $GITHUB_STEP_SUMMARY

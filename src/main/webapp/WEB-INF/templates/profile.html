@@ -168,6 +168,14 @@
                 <h3>Access Token</h3>
                 <pre th:text="${accessTokenJson}">Loading access token JSON...</pre>
             </div>
+            <div class="token-block" th:if="${oboTokenJson}">
+                <h3>PHP API Access Token (OBO)</h3>
+                <pre th:text="${oboTokenJson}">Loading OBO access token JSON...</pre>
+            </div>
+            <div class="token-block" th:if="${oboError}">
+                <h3>PHP API Access Token (OBO)</h3>
+                <p style="color: #e74c3c; font-weight: bold;" th:text="${oboError}">Error message</p>
+            </div>
         </div>
     </div>
 
