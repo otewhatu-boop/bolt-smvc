@@ -1,5 +1,7 @@
 package hdc.company.monitor.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,12 +66,13 @@ class StatusServiceTest {
         statusService = new StatusService(environment, restTemplate);
 
         String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
-        SystemStatusItem[] items = {
-            new SystemStatusItem("sys1", "UP", "2023-01-01T00:00:00Z"),
-            new SystemStatusItem("sys2", "DOWN", "2023-01-01T00:00:01Z")
-        };
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
-            .thenReturn(new ResponseEntity<>(items, HttpStatus.OK));
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode itemsNode = mapper.createArrayNode()
+            .add(mapper.createObjectNode().put("system_id", "sys1").put("status", "UP").put("updated_at", "2023-01-01T00:00:00Z"))
+            .add(mapper.createObjectNode().put("system_id", "sys2").put("status", "DOWN").put("updated_at", "2023-01-01T00:00:01Z"));
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(itemsNode, HttpStatus.OK));
 
         List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
@@ -80,13 +83,38 @@ class StatusServiceTest {
     }
 
     @Test
+    void getSystemStatusList_whenWrappedSuccessful_returnsList() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode wrappedNode = mapper.createObjectNode()
+            .set("response_body", mapper.createArrayNode()
+                .add(mapper.createObjectNode().put("system_id", "sys1").put("test_case", "tc1").put("status", "pass").put("timestamp", "2023-01-01 00:00:00")));
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(wrappedNode, HttpStatus.OK));
+
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertEquals(1, result.size());
+        assertEquals("sys1", result.get(0).getSystemId());
+        assertEquals("tc1", result.get(0).getTestCase());
+        assertEquals("pass", result.get(0).getStatus());
+        assertEquals("2023-01-01 00:00:00", result.get(0).getUpdatedAt());
+        assertFalse(statusService.hasError());
+    }
+
+    @Test
     void getSystemStatusList_whenApiReturnsError_returnsEmptyListAndSetsError() {
         String baseUrl = "http://localhost/api";
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
         String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
         List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
@@ -103,7 +131,7 @@ class StatusServiceTest {
         statusService = new StatusService(environment, restTemplate);
 
         String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(SystemStatusItem[].class)))
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenThrow(new RuntimeException("Connection refused"));
 
         List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");

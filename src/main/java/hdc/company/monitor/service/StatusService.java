@@ -1,5 +1,7 @@
 package hdc.company.monitor.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import java.util.Collections;
-import java.util.List;
 
 @Service
 public class StatusService {
@@ -30,6 +31,7 @@ public class StatusService {
 
     private final RestTemplate restTemplate;
     private final String statusApiUrl;
+    private final ObjectMapper objectMapper;
     private String lastErrorMessage = null;
 
     @Autowired
@@ -39,6 +41,7 @@ public class StatusService {
 
     public StatusService(Environment environment, RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
+        this.objectMapper = new ObjectMapper();
         String envUrl = environment.getProperty(STATUS_API_URL_ENV);
         String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
         this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
@@ -103,10 +106,25 @@ public class StatusService {
             }
             HttpEntity<String> entity = new HttpEntity<>(headers);
             logger.info("Calling backend system status API at {}", statusApiUrl);
-            ResponseEntity<SystemStatusItem[]> response = restTemplate.exchange(statusApiUrl, HttpMethod.GET, entity, SystemStatusItem[].class);
+            ResponseEntity<JsonNode> response = restTemplate.exchange(statusApiUrl, HttpMethod.GET, entity, JsonNode.class);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                logger.info("Backend system status API returned {} items", response.getBody().length);
-                return List.of(response.getBody());
+                JsonNode rootNode = response.getBody();
+                JsonNode itemsNode = rootNode;
+
+                if (rootNode.isObject() && rootNode.has("response_body")) {
+                    itemsNode = rootNode.get("response_body");
+                    logger.debug("Detected wrapped response format with 'response_body'");
+                }
+
+                if (itemsNode.isArray()) {
+                    SystemStatusItem[] items = objectMapper.treeToValue(itemsNode, SystemStatusItem[].class);
+                    logger.info("Backend system status API returned {} items", items.length);
+                    return List.of(items);
+                } else {
+                    logger.warn("Backend system status API returned success but body/response_body is not an array");
+                    lastErrorMessage = "Unexpected API response format";
+                    return Collections.emptyList();
+                }
             }
             logger.warn("Backend system status API returned {} with no body", response.getStatusCode());
             lastErrorMessage = "Backend returned status " + response.getStatusCode();
