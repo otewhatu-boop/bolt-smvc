@@ -12,6 +12,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -128,6 +129,24 @@ public class StatusService {
             }
             logger.warn("Backend system status API returned {} with no body", response.getStatusCode());
             lastErrorMessage = "Backend returned status " + response.getStatusCode();
+        } catch (HttpClientErrorException.Unauthorized ex) {
+            String body = ex.getResponseBodyAsString();
+            String reason = null;
+            try {
+                JsonNode errorNode = objectMapper.readTree(body);
+                if (errorNode.has("reason")) {
+                    reason = errorNode.get("reason").asText();
+                }
+            } catch (Exception e) {
+                logger.debug("Could not parse 401 error response body as JSON: {}", body);
+            }
+
+            if (reason != null) {
+                lastErrorMessage = "Access Denied: You do not have permission to view system status. Reason: " + reason;
+            } else {
+                lastErrorMessage = "Access Denied: You do not have permission to view system status.";
+            }
+            logger.warn("Unauthorized access to backend system status API: {}", lastErrorMessage);
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend system status from {}: {}", statusApiUrl, ex.getMessage(), ex);
             lastErrorMessage = "Error fetching status: " + ex.getMessage();

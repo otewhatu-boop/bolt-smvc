@@ -9,12 +9,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.env.MockEnvironment;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -139,5 +142,27 @@ class StatusServiceTest {
         assertTrue(result.isEmpty());
         assertTrue(statusService.hasError());
         assertTrue(statusService.getErrorMessage().contains("Connection refused"));
+    }
+
+    @Test
+    void getSystemStatusList_whenUnauthorizedWithReason_returnsEmptyListAndSetsFriendlyError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        String responseBody = "{\"error\":\"Unauthorized\",\"reason\":\"JWT audience mismatch\"}";
+
+        HttpClientErrorException.Unauthorized ex = (HttpClientErrorException.Unauthorized) HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, responseBody.getBytes(), StandardCharsets.UTF_8);
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenThrow(ex);
+
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.isEmpty());
+        assertTrue(statusService.hasError());
+        assertEquals("Access Denied: You do not have permission to view system status. Reason: JWT audience mismatch", statusService.getErrorMessage());
     }
 }
