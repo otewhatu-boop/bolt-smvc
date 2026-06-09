@@ -34,6 +34,10 @@ public class EntraIdOboService {
      * @param userAccessToken The access token obtained during user login (assertion).
      * @return The new API-specific access token, or null if exchange fails.
      */
+    public String getPhpApiScope() {
+        return properties.getPhpApiScope();
+    }
+
     public String getOboToken(String userAccessToken) {
         if (!properties.isConfigured() || userAccessToken == null || userAccessToken.isBlank()) {
             logger.warn("Entra ID is not configured or user access token is missing, cannot perform OBO flow");

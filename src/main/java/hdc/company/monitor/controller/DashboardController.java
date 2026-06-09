@@ -47,9 +47,14 @@ public class DashboardController {
             // Token extraction or OBO exchange failed, will proceed
         }
 
+        if (initialAccessToken != null && apiAccessToken == null) {
+            model.addAttribute("statusFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
+        } else {
+            model.addAttribute("statusFetchError", statusService.getErrorMessage());
+        }
+
         model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
-        model.addAttribute("statusFetchError", statusService.getErrorMessage());
         if (principal instanceof OidcUser oidcUser) {
             model.addAttribute("userName", oidcUser.getFullName());
             model.addAttribute("userEmail", oidcUser.getEmail());
