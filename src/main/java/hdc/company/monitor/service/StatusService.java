@@ -2,6 +2,7 @@ package hdc.company.monitor.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hdc.company.monitor.model.ProductItem;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +30,11 @@ public class StatusService {
 
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
     public static final String STATUS_API_PATH = "status.php";
+    public static final String PRODUCT_API_PATH = "product";
 
     private final RestTemplate restTemplate;
     private final String statusApiUrl;
+    private final String productApiUrl;
     private final ObjectMapper objectMapper;
     private String lastErrorMessage = null;
 
@@ -45,7 +48,8 @@ public class StatusService {
         this.objectMapper = new ObjectMapper();
         String envUrl = environment.getProperty(STATUS_API_URL_ENV);
         String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
-        this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
+        this.statusApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, STATUS_API_PATH) : null;
+        this.productApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, PRODUCT_API_PATH) : null;
 
         // Ensure RestTemplate can read JSON even when server responds with text/html
         try {
@@ -78,15 +82,65 @@ public class StatusService {
         }
     }
 
-    private static String normalizeStatusApiUrl(String rawUrl) {
+    private static String normalizeApiUrl(String rawUrl, String path) {
         String normalized = rawUrl.trim();
-        if (normalized.endsWith(STATUS_API_PATH)) {
+        if (normalized.endsWith(path)) {
             return normalized;
         }
         if (normalized.endsWith("/")) {
-            return normalized + STATUS_API_PATH;
+            return normalized + path;
         }
-        return normalized + "/" + STATUS_API_PATH;
+        return normalized + "/" + path;
+    }
+
+    public List<ProductItem> getProductList(String accessToken) {
+        lastErrorMessage = null;
+
+        if (productApiUrl == null) {
+            logger.debug("Product backend is not configured; returning empty list.");
+            return Collections.emptyList();
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+                logger.debug("Authorization header added to product API request");
+            }
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            logger.info("Calling backend product API at {}", productApiUrl);
+            ResponseEntity<JsonNode> response = restTemplate.exchange(productApiUrl, HttpMethod.GET, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode rootNode = response.getBody();
+                JsonNode itemsNode = rootNode;
+
+                if (rootNode.isObject() && rootNode.has("response_body")) {
+                    itemsNode = rootNode.get("response_body");
+                }
+
+                if (itemsNode.isArray()) {
+                    ProductItem[] items = objectMapper.treeToValue(itemsNode, ProductItem[].class);
+                    logger.info("Backend product API returned {} items", items.length);
+                    return List.of(items);
+                } else if (itemsNode.isObject()) {
+                    ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
+                    logger.info("Backend product API returned 1 item");
+                    return List.of(item);
+                } else {
+                    logger.warn("Backend product API returned success but body/response_body is not an array or object");
+                    lastErrorMessage = "Unexpected API response format";
+                    return Collections.emptyList();
+                }
+            }
+            lastErrorMessage = "Backend returned status " + response.getStatusCode();
+        } catch (HttpClientErrorException.Unauthorized ex) {
+            lastErrorMessage = "Access Denied: You do not have permission to view products.";
+            logger.warn("Unauthorized access to backend product API");
+        } catch (Exception ex) {
+            logger.warn("Failed to fetch backend products from {}: {}", productApiUrl, ex.getMessage());
+            lastErrorMessage = "Error fetching products: " + ex.getMessage();
+        }
+        return Collections.emptyList();
     }
 
     public List<SystemStatusItem> getSystemStatusList(String accessToken) {

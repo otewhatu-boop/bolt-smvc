@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Dashboard - Monitor Centre</title>
+    <title>Manage - Monitor Centre</title>
     <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
     <link rel="shortcut icon" th:href="@{/favicon.svg}">
     <link rel="icon" type="image/png" sizes="32x32" th:href="@{/favicon-32x32.png}">
@@ -119,23 +119,6 @@
             font-weight: 600;
         }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.9rem;
-            color: white;
-        }
-
-        .status-badge.online { background-color: #27ae60; }
-        .status-badge.offline { background-color: #c0392b; }
-        .status-badge.maintenance { background-color: #f39c12; }
-        .status-badge.degraded { background-color: #d35400; }
-        .status-badge.pass { background-color: #27ae60; }
-        .status-badge.fail { background-color: #c0392b; }
-
         .config-warning {
             color: #c0392b;
             font-weight: 600;
@@ -178,16 +161,15 @@
 
     <div class="container">
         <div class="welcome">
-            <h2>Welcome to Monitor Centre</h2>
+            <h2>Product Management</h2>
             <p th:if="${userName}">Hello, <span th:text="${userName}">User</span>!</p>
-            <p th:if="${userEmail}">Email: <span th:text="${userEmail}">email@example.com</span></p>
         </div>
 
         <div class="status-panel">
-            <h2>System Status</h2>
-            <div th:if="${statusFetchError != null}">
-                <p class="config-warning">⚠️ Error fetching system status:</p>
-                <p style="color: #c0392b; margin: 0.5rem 0 0 0;"><span th:text="${statusFetchError}">Error message</span></p>
+            <h2>System Products</h2>
+            <div th:if="${productFetchError != null}">
+                <p class="config-warning">⚠️ Error fetching products:</p>
+                <p style="color: #c0392b; margin: 0.5rem 0 0 0;"><span th:text="${productFetchError}">Error message</span></p>
             </div>
             <div th:if="${statusConfigMissing != null and !#lists.isEmpty(statusConfigMissing)}">
                 <p class="config-warning">Backend configuration is not set. Please define the following environment variable(s):</p>
@@ -195,31 +177,25 @@
                     <li th:each="var : ${statusConfigMissing}" th:text="${var}">STATUS_API_URL</li>
                 </ul>
             </div>
-            <div th:if="${systemStatusList != null and !#lists.isEmpty(systemStatusList)}">
+            <div th:if="${productList != null and !#lists.isEmpty(productList)}">
                 <table>
                     <thead>
                         <tr>
-                            <th>System ID</th>
+                            <th>Product Name</th>
+                            <th>Description</th>
                             <th>Test Case</th>
-                            <th>Status</th>
-                            <th>Last Updated</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="status : ${systemStatusList}">
-                            <td th:text="${status.systemId}">system-001</td>
-                            <td th:text="${status.testCase}">N/A</td>
-                            <td>
-                                <span class="status-badge" th:classappend=" ' ' + ${status.status}">
-                                    <span th:text="${status.status}">online</span>
-                                </span>
-                            </td>
-                            <td th:text="${status.updatedAt}">2025-12-14 10:30:45</td>
+                        <tr th:each="product : ${productList}">
+                            <td th:text="${product.productName}">Product Name</td>
+                            <td th:text="${product.productDescription}">Description</td>
+                            <td th:text="${product.testCase}">Test Case</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <p th:if="${(systemStatusList == null or #lists.isEmpty(systemStatusList)) and (statusConfigMissing == null or #lists.isEmpty(statusConfigMissing)) and statusFetchError == null}">No system status records available.</p>
+            <p th:if="${(productList == null or #lists.isEmpty(productList)) and (statusConfigMissing == null or #lists.isEmpty(statusConfigMissing)) and productFetchError == null}">No products available.</p>
         </div>
     </div>
 
