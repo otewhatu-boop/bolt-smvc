@@ -60,7 +60,8 @@ public class ManageControllerTest {
         mockMvc.perform(post("/manage/update")
                 .with(csrf())
                 .param("productName", "prod1")
-                .param("productDescription", "updatedDesc"))
+                .param("productDescription", "updatedDesc")
+                .param("testCase", "updatedTC"))
                .andExpect(status().is3xxRedirection())
                .andExpect(redirectedUrl("/manage"));
     }

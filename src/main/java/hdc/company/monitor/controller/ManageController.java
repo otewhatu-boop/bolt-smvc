@@ -91,9 +91,10 @@ public class ManageController {
     @PostMapping("/manage/update")
     public String updateProduct(@RequestParam("productName") String productName,
                                 @RequestParam("productDescription") String productDescription,
+                                @RequestParam(value = "testCase", required = false) String testCase,
                                 Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         String apiAccessToken = getApiAccessToken(principal, request);
-        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, apiAccessToken);
+        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, testCase, apiAccessToken);
         if (response.hasError()) {
             redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
         } else {

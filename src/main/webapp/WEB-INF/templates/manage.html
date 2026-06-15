@@ -304,6 +304,7 @@
                                 <button class="btn btn-primary"
                                         th:data-name="${product.productName}"
                                         th:data-description="${product.productDescription}"
+                                        th:data-testcase="${product.testCase}"
                                         onclick="openEditModalFromData(this)">Edit</button>
                                 <button class="btn btn-danger"
                                         th:data-name="${product.productName}"
@@ -366,6 +367,10 @@
                     <label for="editProductDescription">Description:</label>
                     <textarea id="editProductDescription" name="productDescription" rows="3" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="editTestCase">Test Case / URL:</label>
+                    <input type="text" id="editTestCase" name="testCase">
+                </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn" onclick="closeModal('editModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update</button>
@@ -400,7 +405,8 @@
         function openEditModalFromData(button) {
             const name = button.getAttribute('data-name');
             const description = button.getAttribute('data-description');
-            openEditModal(name, description);
+            const testCase = button.getAttribute('data-testcase');
+            openEditModal(name, description, testCase);
         }
 
         function openDeleteModalFromData(button) {
@@ -408,10 +414,11 @@
             openDeleteModal(name);
         }
 
-        function openEditModal(name, description) {
+        function openEditModal(name, description, testCase) {
             document.getElementById('editProductName').value = name;
             document.getElementById('editProductNameDisplay').innerText = name;
             document.getElementById('editProductDescription').value = description;
+            document.getElementById('editTestCase').value = testCase || '';
             document.getElementById('editModal').style.display = 'block';
         }
 

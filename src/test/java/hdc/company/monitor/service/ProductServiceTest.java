@@ -155,7 +155,7 @@ class ProductServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.PUT), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
-        ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "token");
+        ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "newTC", "token");
 
         assertFalse(result.hasError());
         assertEquals("Product updated successfully", result.getMessage());

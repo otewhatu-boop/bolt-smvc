@@ -194,7 +194,7 @@ public class StatusService {
         }
     }
 
-    public ServiceResponse<Void> updateProduct(String productName, String productDescription, String accessToken) {
+    public ServiceResponse<Void> updateProduct(String productName, String productDescription, String testCase, String accessToken) {
         if (productApiUrl == null) return ServiceResponse.error("Product API not configured");
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -202,7 +202,11 @@ public class StatusService {
             if (accessToken != null && !accessToken.isBlank()) {
                 headers.setBearerAuth(accessToken);
             }
-            java.util.Map<String, String> body = java.util.Map.of("product_description", productDescription);
+            java.util.Map<String, String> body = new java.util.HashMap<>();
+            body.put("product_description", productDescription);
+            if (testCase != null) {
+                body.put("test_case", testCase);
+            }
             HttpEntity<java.util.Map<String, String>> entity = new HttpEntity<>(body, headers);
             String url = productApiUrl + "?product_name=" + productName;
             ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.PUT, entity, JsonNode.class);
