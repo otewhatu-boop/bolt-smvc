@@ -36,6 +36,7 @@ public class StatusService {
 
     private final Environment environment;
     private final RestTemplate restTemplate;
+    private final String apiBaseUrl;
     private final String statusApiUrl;
     private final String productApiUrl;
     private final ObjectMapper objectMapper;
@@ -50,9 +51,10 @@ public class StatusService {
         this.restTemplate = restTemplate;
         this.objectMapper = new ObjectMapper();
         String envUrl = this.environment.getProperty(STATUS_API_URL_ENV);
-        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
-        this.statusApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, STATUS_API_PATH) : null;
-        this.productApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, PRODUCT_API_PATH) : null;
+        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl.trim() : null;
+        this.apiBaseUrl = rawUrl != null ? normalizeBaseUrl(rawUrl) : null;
+        this.statusApiUrl = apiBaseUrl != null ? buildUrl(STATUS_API_PATH) : null;
+        this.productApiUrl = apiBaseUrl != null ? buildUrl(PRODUCT_API_PATH) : null;
 
         // Ensure RestTemplate can read JSON even when server responds with text/html
         try {
@@ -78,22 +80,27 @@ public class StatusService {
             logger.warn("Unable to configure RestTemplate message converters to accept text/html", ex);
         }
 
-        if (statusApiUrl != null) {
-            logger.info("STATUS_API_URL resolved to [{}]", statusApiUrl);
+        if (apiBaseUrl != null) {
+            logger.info("API base URL resolved to [{}]", apiBaseUrl);
+            logger.info("Status endpoint resolved to [{}]", statusApiUrl);
+            logger.info("Product endpoint resolved to [{}]", productApiUrl);
         } else {
-            logger.warn("STATUS_API_URL is not configured. Backend status API calls will not be made.");
+            logger.warn("STATUS_API_URL is not configured. Backend API calls will not be made.");
         }
     }
 
-    private static String normalizeApiUrl(String rawUrl, String path) {
-        String normalized = rawUrl.trim();
-        if (normalized.endsWith(path)) {
-            return normalized;
+    private String buildUrl(String path) {
+        if (apiBaseUrl == null) return null;
+        return apiBaseUrl + (apiBaseUrl.endsWith("/") ? "" : "/") + path;
+    }
+
+    private static String normalizeBaseUrl(String rawUrl) {
+        String normalized = rawUrl;
+        if (normalized.endsWith(STATUS_API_PATH)) {
+            normalized = normalized.substring(0, normalized.length() - STATUS_API_PATH.length());
         }
-        if (normalized.endsWith("/")) {
-            return normalized + path;
-        }
-        return normalized + "/" + path;
+        if (normalized.isEmpty()) return "/";
+        return normalized;
     }
 
     public ServiceResponse<ProductItem> getProductList(String accessToken) {

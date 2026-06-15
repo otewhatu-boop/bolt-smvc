@@ -56,6 +56,36 @@ class StatusServiceTest {
         assertTrue(statusService.getMissingConfiguration().isEmpty());
     }
 
+    @Test
+    void buildUrl_derivesCorrectUrls_fromRoot() {
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, "http://localhost/api/");
+        statusService = new StatusService(environment, restTemplate);
+
+        // This is tricky as statusApiUrl is private. We'll test via the effect on getSystemStatusList.
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.createArrayNode();
+        when(restTemplate.exchange(eq("http://localhost/api/status.php"), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(node, HttpStatus.OK));
+
+        statusService.getSystemStatusList("token");
+        // Verify is implicit by the mock matching the expected URL
+    }
+
+    @Test
+    void buildUrl_derivesCorrectUrls_fromFullEndpoint() {
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, "http://localhost/api/status.php");
+        statusService = new StatusService(environment, restTemplate);
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.createArrayNode();
+        // Base should be http://localhost/api/
+        // Product should be http://localhost/api/product
+        when(restTemplate.exchange(eq("http://localhost/api/product"), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(node, HttpStatus.OK));
+
+        statusService.getProductList("token");
+    }
+
 
     @Test
     void getSystemStatusList_whenSuccessful_returnsList() {
