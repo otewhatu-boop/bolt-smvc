@@ -31,7 +31,9 @@ public class StatusService {
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
     public static final String STATUS_API_PATH = "status.php";
     public static final String PRODUCT_API_PATH = "product";
+    public static final String APP_ENV_ENV = "APP_ENV";
 
+    private final Environment environment;
     private final RestTemplate restTemplate;
     private final String statusApiUrl;
     private final String productApiUrl;
@@ -44,9 +46,10 @@ public class StatusService {
     }
 
     public StatusService(Environment environment, RestTemplate restTemplate) {
+        this.environment = environment;
         this.restTemplate = restTemplate;
         this.objectMapper = new ObjectMapper();
-        String envUrl = environment.getProperty(STATUS_API_URL_ENV);
+        String envUrl = this.environment.getProperty(STATUS_API_URL_ENV);
         String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
         this.statusApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, STATUS_API_PATH) : null;
         this.productApiUrl = rawUrl != null ? normalizeApiUrl(rawUrl, PRODUCT_API_PATH) : null;
@@ -138,7 +141,11 @@ public class StatusService {
             logger.warn("Unauthorized access to backend product API");
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend products from {}: {}", productApiUrl, ex.getMessage());
-            lastErrorMessage = "Error fetching products: " + ex.getMessage();
+            if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
+                lastErrorMessage = "Error fetching products: " + ex.getMessage();
+            } else {
+                lastErrorMessage = "An error occurred while fetching products. Please contact support.";
+            }
         }
         return Collections.emptyList();
     }
@@ -203,7 +210,11 @@ public class StatusService {
             logger.warn("Unauthorized access to backend system status API: {}", lastErrorMessage);
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend system status from {}: {}", statusApiUrl, ex.getMessage(), ex);
-            lastErrorMessage = "Error fetching status: " + ex.getMessage();
+            if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
+                lastErrorMessage = "Error fetching status: " + ex.getMessage();
+            } else {
+                lastErrorMessage = "An error occurred while fetching system status. Please contact support.";
+            }
         }
         return Collections.emptyList();
     }

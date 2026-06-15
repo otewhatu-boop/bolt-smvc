@@ -128,9 +128,10 @@ class StatusServiceTest {
     }
 
     @Test
-    void getSystemStatusList_whenExceptionOccurs_returnsEmptyListAndSetsError() {
+    void getSystemStatusList_whenExceptionOccurs_inDev_returnsDetailedError() {
         String baseUrl = "http://localhost/api";
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        environment.setProperty(StatusService.APP_ENV_ENV, "development");
         statusService = new StatusService(environment, restTemplate);
 
         String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
@@ -142,6 +143,24 @@ class StatusServiceTest {
         assertTrue(result.isEmpty());
         assertTrue(statusService.hasError());
         assertTrue(statusService.getErrorMessage().contains("Connection refused"));
+    }
+
+    @Test
+    void getSystemStatusList_whenExceptionOccurs_inProd_returnsGenericError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        environment.setProperty(StatusService.APP_ENV_ENV, "production");
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenThrow(new RuntimeException("Connection refused"));
+
+        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.isEmpty());
+        assertTrue(statusService.hasError());
+        assertEquals("An error occurred while fetching system status. Please contact support.", statusService.getErrorMessage());
     }
 
     @Test

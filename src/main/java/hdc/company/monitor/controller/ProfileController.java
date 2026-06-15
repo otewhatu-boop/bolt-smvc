@@ -25,12 +25,15 @@ public class ProfileController {
 
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
     private final EntraIdOboService oboService;
+    private final org.springframework.core.env.Environment environment;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ProfileController(OAuth2AuthorizedClientRepository authorizedClientRepository,
-                             EntraIdOboService oboService) {
+                             EntraIdOboService oboService,
+                             org.springframework.core.env.Environment environment) {
         this.authorizedClientRepository = authorizedClientRepository;
         this.oboService = oboService;
+        this.environment = environment;
         this.objectMapper.registerModule(new JavaTimeModule());
     }
 
@@ -68,7 +71,11 @@ public class ProfileController {
                         model.addAttribute("oboError", "Failed to obtain OBO token. Check logs for details.");
                     }
                 } catch (Exception e) {
-                    model.addAttribute("oboError", "Error during OBO exchange: " + e.getMessage());
+                    if ("development".equalsIgnoreCase(environment.getProperty("APP_ENV"))) {
+                        model.addAttribute("oboError", "Error during OBO exchange: " + e.getMessage());
+                    } else {
+                        model.addAttribute("oboError", "An error occurred during token exchange. Please contact support.");
+                    }
                 }
             }
         }

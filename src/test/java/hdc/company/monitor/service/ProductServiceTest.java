@@ -58,6 +58,24 @@ class ProductServiceTest {
     }
 
     @Test
+    void getProductList_whenExceptionOccurs_inProd_returnsGenericError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        environment.setProperty(StatusService.APP_ENV_ENV, "production");
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH;
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenThrow(new RuntimeException("Connection refused"));
+
+        List<ProductItem> result = statusService.getProductList("test-token");
+
+        assertTrue(result.isEmpty());
+        assertTrue(statusService.hasError());
+        assertEquals("An error occurred while fetching products. Please contact support.", statusService.getErrorMessage());
+    }
+
+    @Test
     void getProductList_whenWrappedSuccessful_returnsList() {
         String baseUrl = "http://localhost/api";
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
