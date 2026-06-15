@@ -6,6 +6,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.core.Authentication;
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,8 @@ import java.util.Properties;
 
 @Controller
 public class DashboardController {
+
+    private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
 
     private final StatusService statusService;
     private final EntraIdOboService oboService;
@@ -44,7 +48,7 @@ public class DashboardController {
                 }
             }
         } catch (Exception ex) {
-            // Token extraction or OBO exchange failed, will proceed
+            logger.error("Failed to retrieve or exchange tokens for Dashboard page", ex);
         }
 
         model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
