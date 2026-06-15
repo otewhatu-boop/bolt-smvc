@@ -96,4 +96,65 @@ class ProductServiceTest {
         assertEquals(1, result.getData().size());
         assertEquals("prod1", result.getData().get(0).getProductName());
     }
+
+    @Test
+    void createProduct_whenSuccessful_returnsSuccess() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        ProductItem item = new ProductItem("newProd", "newDesc", "newTC");
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH;
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.createObjectNode().put("message", "Product created successfully");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.POST), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.CREATED));
+
+        ServiceResponse<Void> result = statusService.createProduct(item, "token");
+
+        assertFalse(result.hasError());
+        assertEquals("Product created successfully", result.getMessage());
+    }
+
+    @Test
+    void updateProduct_whenSuccessful_returnsSuccess() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name=prod1";
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.createObjectNode().put("message", "Product updated successfully");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.PUT), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "token");
+
+        assertFalse(result.hasError());
+        assertEquals("Product updated successfully", result.getMessage());
+    }
+
+    @Test
+    void deleteProduct_whenSuccessful_returnsSuccess() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name=prod1";
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.createObjectNode().put("message", "Product deleted successfully");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteProduct("prod1", "token");
+
+        assertFalse(result.hasError());
+        assertEquals("Product deleted successfully", result.getMessage());
+    }
 }

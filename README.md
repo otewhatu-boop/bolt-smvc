@@ -176,10 +176,12 @@ mvn clean
 ## Application Features
 
 - **Login Interface**: Clean, responsive login form (placeholder functionality)
+- **Product Management**: Full CRUD operations for system products (Create, Read, Update, Delete).
 - **Version Display**: Shows application version from `version.properties`
 - **Responsive Design**: Mobile-friendly interface
 - **Spring MVC**: RESTful controller architecture
 - **Thymeleaf Templates**: Server-side rendering
+- **API Documentation**: Integrated with the [Bolt PHP System Status API](https://control.hdc.company/php/openapi.yaml).
 
 ## Configuration
 
