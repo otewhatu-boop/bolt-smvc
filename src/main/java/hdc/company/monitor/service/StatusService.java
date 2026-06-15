@@ -2,6 +2,8 @@ package hdc.company.monitor.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hdc.company.monitor.model.ProductItem;
+import hdc.company.monitor.model.ServiceResponse;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +31,15 @@ public class StatusService {
 
     public static final String STATUS_API_URL_ENV = "STATUS_API_URL";
     public static final String STATUS_API_PATH = "status.php";
+    public static final String PRODUCT_API_PATH = "product";
+    public static final String APP_ENV_ENV = "APP_ENV";
 
+    private final Environment environment;
     private final RestTemplate restTemplate;
+    private final String apiBaseUrl;
     private final String statusApiUrl;
+    private final String productApiUrl;
     private final ObjectMapper objectMapper;
-    private String lastErrorMessage = null;
 
     @Autowired
     public StatusService(Environment environment) {
@@ -41,11 +47,14 @@ public class StatusService {
     }
 
     public StatusService(Environment environment, RestTemplate restTemplate) {
+        this.environment = environment;
         this.restTemplate = restTemplate;
         this.objectMapper = new ObjectMapper();
-        String envUrl = environment.getProperty(STATUS_API_URL_ENV);
-        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl : null;
-        this.statusApiUrl = rawUrl != null ? normalizeStatusApiUrl(rawUrl) : null;
+        String envUrl = this.environment.getProperty(STATUS_API_URL_ENV);
+        String rawUrl = envUrl != null && !envUrl.isBlank() ? envUrl.trim() : null;
+        this.apiBaseUrl = rawUrl != null ? normalizeBaseUrl(rawUrl) : null;
+        this.statusApiUrl = apiBaseUrl != null ? buildUrl(STATUS_API_PATH) : null;
+        this.productApiUrl = apiBaseUrl != null ? buildUrl(PRODUCT_API_PATH) : null;
 
         // Ensure RestTemplate can read JSON even when server responds with text/html
         try {
@@ -71,30 +80,85 @@ public class StatusService {
             logger.warn("Unable to configure RestTemplate message converters to accept text/html", ex);
         }
 
-        if (statusApiUrl != null) {
-            logger.info("STATUS_API_URL resolved to [{}]", statusApiUrl);
+        if (apiBaseUrl != null) {
+            logger.info("API base URL resolved to [{}]", apiBaseUrl);
+            logger.info("Status endpoint resolved to [{}]", statusApiUrl);
+            logger.info("Product endpoint resolved to [{}]", productApiUrl);
         } else {
-            logger.warn("STATUS_API_URL is not configured. Backend status API calls will not be made.");
+            logger.warn("STATUS_API_URL is not configured. Backend API calls will not be made.");
         }
     }
 
-    private static String normalizeStatusApiUrl(String rawUrl) {
-        String normalized = rawUrl.trim();
+    private String buildUrl(String path) {
+        if (apiBaseUrl == null) return null;
+        return apiBaseUrl + (apiBaseUrl.endsWith("/") ? "" : "/") + path;
+    }
+
+    private static String normalizeBaseUrl(String rawUrl) {
+        String normalized = rawUrl;
         if (normalized.endsWith(STATUS_API_PATH)) {
-            return normalized;
+            normalized = normalized.substring(0, normalized.length() - STATUS_API_PATH.length());
         }
-        if (normalized.endsWith("/")) {
-            return normalized + STATUS_API_PATH;
-        }
-        return normalized + "/" + STATUS_API_PATH;
+        if (normalized.isEmpty()) return "/";
+        return normalized;
     }
 
-    public List<SystemStatusItem> getSystemStatusList(String accessToken) {
-        lastErrorMessage = null;
-        
+    public ServiceResponse<ProductItem> getProductList(String accessToken) {
+        if (productApiUrl == null) {
+            logger.debug("Product backend is not configured; returning empty list.");
+            return ServiceResponse.success(Collections.emptyList());
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+                logger.debug("Authorization header added to product API request");
+            }
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+            logger.info("Calling backend product API at {}", productApiUrl);
+            ResponseEntity<JsonNode> response = restTemplate.exchange(productApiUrl, HttpMethod.GET, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode rootNode = response.getBody();
+                JsonNode itemsNode = rootNode;
+
+                if (rootNode.isObject() && rootNode.has("response_body")) {
+                    itemsNode = rootNode.get("response_body");
+                }
+
+                if (itemsNode.isArray()) {
+                    ProductItem[] items = objectMapper.treeToValue(itemsNode, ProductItem[].class);
+                    logger.info("Backend product API returned {} items", items.length);
+                    return ServiceResponse.success(List.of(items));
+                } else if (itemsNode.isObject()) {
+                    ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
+                    logger.info("Backend product API returned 1 item");
+                    return ServiceResponse.success(List.of(item));
+                } else {
+                    logger.warn("Backend product API returned success but body/response_body is not an array or object");
+                    return ServiceResponse.error("Unexpected API response format");
+                }
+            }
+            return ServiceResponse.error("Backend returned status " + response.getStatusCode());
+        } catch (HttpClientErrorException.Unauthorized ex) {
+            logger.warn("Unauthorized access to backend product API");
+            return ServiceResponse.error("Access Denied: You do not have permission to view products.");
+        } catch (Exception ex) {
+            logger.warn("Failed to fetch backend products from {}: {}", productApiUrl, ex.getMessage());
+            String errorMessage;
+            if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
+                errorMessage = "Error fetching products: " + ex.getMessage();
+            } else {
+                errorMessage = "An error occurred while fetching products. Please contact support.";
+            }
+            return ServiceResponse.error(errorMessage);
+        }
+    }
+
+    public ServiceResponse<SystemStatusItem> getSystemStatusList(String accessToken) {
         if (statusApiUrl == null) {
             logger.debug("System status backend is not configured; returning empty list.");
-            return Collections.emptyList();
+            return ServiceResponse.success(Collections.emptyList());
         }
 
         try {
@@ -120,15 +184,14 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     SystemStatusItem[] items = objectMapper.treeToValue(itemsNode, SystemStatusItem[].class);
                     logger.info("Backend system status API returned {} items", items.length);
-                    return List.of(items);
+                    return ServiceResponse.success(List.of(items));
                 } else {
                     logger.warn("Backend system status API returned success but body/response_body is not an array");
-                    lastErrorMessage = "Unexpected API response format";
-                    return Collections.emptyList();
+                    return ServiceResponse.error("Unexpected API response format");
                 }
             }
             logger.warn("Backend system status API returned {} with no body", response.getStatusCode());
-            lastErrorMessage = "Backend returned status " + response.getStatusCode();
+            return ServiceResponse.error("Backend returned status " + response.getStatusCode());
         } catch (HttpClientErrorException.Unauthorized ex) {
             String body = ex.getResponseBodyAsString();
             String reason = null;
@@ -141,33 +204,32 @@ public class StatusService {
                 logger.debug("Could not parse 401 error response body as JSON: {}", body);
             }
 
+            String errorMessage;
             if (reason != null) {
-                lastErrorMessage = "Access Denied: You do not have permission to view system status. Reason: " + reason;
+                errorMessage = "Access Denied: You do not have permission to view system status. Reason: " + reason;
             } else {
-                lastErrorMessage = "Access Denied: You do not have permission to view system status.";
+                errorMessage = "Access Denied: You do not have permission to view system status.";
             }
-            logger.warn("Unauthorized access to backend system status API: {}", lastErrorMessage);
+            logger.warn("Unauthorized access to backend system status API: {}", errorMessage);
+            return ServiceResponse.error(errorMessage);
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend system status from {}: {}", statusApiUrl, ex.getMessage(), ex);
-            lastErrorMessage = "Error fetching status: " + ex.getMessage();
+            String errorMessage;
+            if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
+                errorMessage = "Error fetching status: " + ex.getMessage();
+            } else {
+                errorMessage = "An error occurred while fetching system status. Please contact support.";
+            }
+            return ServiceResponse.error(errorMessage);
         }
-        return Collections.emptyList();
     }
 
-    public List<SystemStatusItem> getSystemStatusList() {
+    public ServiceResponse<SystemStatusItem> getSystemStatusList() {
         return getSystemStatusList(null);
     }
 
     public boolean isConfigured() {
         return statusApiUrl != null;
-    }
-
-    public boolean hasError() {
-        return lastErrorMessage != null;
-    }
-
-    public String getErrorMessage() {
-        return lastErrorMessage;
     }
 
     public List<String> getMissingConfiguration() {

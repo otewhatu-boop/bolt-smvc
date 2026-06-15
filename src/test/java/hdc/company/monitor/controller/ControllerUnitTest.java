@@ -75,7 +75,7 @@ public class ControllerUnitTest {
             @Override
             public void removeAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
             }
-        }, oboService);
+        }, oboService, new MockEnvironment());
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("email", "jules@example.com", "preferred_username", "jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
         OAuth2AuthenticationToken authentication = new OAuth2AuthenticationToken(oidcUser, oidcUser.getAuthorities(), "entra");
@@ -134,7 +134,7 @@ public class ControllerUnitTest {
             }
         };
 
-        ProfileController controller = new ProfileController(repository, oboService);
+        ProfileController controller = new ProfileController(repository, oboService, new MockEnvironment());
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.profile(authentication, null, model);
@@ -161,7 +161,7 @@ public class ControllerUnitTest {
             @Override
             public void removeAuthorizedClient(String clientRegistrationId, Authentication principal, HttpServletRequest request, HttpServletResponse response) {
             }
-        }, oboService);
+        }, oboService, new MockEnvironment());
         ExtendedModelMap model = new ExtendedModelMap();
 
         Authentication authentication = new Authentication() {

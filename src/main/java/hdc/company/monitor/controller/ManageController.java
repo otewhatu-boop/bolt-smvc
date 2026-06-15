@@ -4,8 +4,8 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.core.Authentication;
+import hdc.company.monitor.model.ProductItem;
 import hdc.company.monitor.model.ServiceResponse;
-import hdc.company.monitor.model.SystemStatusItem;
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 import org.slf4j.Logger;
@@ -19,15 +19,15 @@ import java.security.Principal;
 import java.util.Properties;
 
 @Controller
-public class DashboardController {
+public class ManageController {
 
-    private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
+    private static final Logger logger = LoggerFactory.getLogger(ManageController.class);
 
     private final StatusService statusService;
     private final EntraIdOboService oboService;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-    public DashboardController(StatusService statusService,
+    public ManageController(StatusService statusService,
                                EntraIdOboService oboService,
                                OAuth2AuthorizedClientRepository authorizedClientRepository) {
         this.statusService = statusService;
@@ -35,8 +35,8 @@ public class DashboardController {
         this.authorizedClientRepository = authorizedClientRepository;
     }
 
-    @GetMapping("/dashboard")
-    public String dashboard(Principal principal, HttpServletRequest request, Model model) {
+    @GetMapping("/manage")
+    public String manage(Principal principal, HttpServletRequest request, Model model) {
         model.addAttribute("version", getAppVersion());
         String initialAccessToken = null;
         String apiAccessToken = null;
@@ -50,23 +50,23 @@ public class DashboardController {
                 }
             }
         } catch (Exception ex) {
-            logger.error("Failed to retrieve or exchange tokens for Dashboard page", ex);
+            logger.error("Failed to retrieve or exchange tokens for Manage page", ex);
         }
 
-        ServiceResponse<SystemStatusItem> statusResponse = statusService.getSystemStatusList(apiAccessToken);
-        model.addAttribute("systemStatusList", statusResponse.getData());
+        ServiceResponse<ProductItem> productResponse = statusService.getProductList(apiAccessToken);
+        model.addAttribute("productList", productResponse.getData());
 
         if (initialAccessToken != null && apiAccessToken == null) {
-            model.addAttribute("statusFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
+            model.addAttribute("productFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
         } else {
-            model.addAttribute("statusFetchError", statusResponse.getErrorMessage());
+            model.addAttribute("productFetchError", productResponse.getErrorMessage());
         }
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         if (principal instanceof OidcUser oidcUser) {
             model.addAttribute("userName", oidcUser.getFullName());
             model.addAttribute("userEmail", oidcUser.getEmail());
         }
-        return "dashboard";
+        return "manage";
     }
 
     private String getAppVersion() {
