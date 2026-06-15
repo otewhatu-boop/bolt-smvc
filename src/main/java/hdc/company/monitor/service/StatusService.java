@@ -129,11 +129,26 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     ProductItem[] items = objectMapper.treeToValue(itemsNode, ProductItem[].class);
                     logger.info("Backend product API returned {} items", items.length);
-                    return ServiceResponse.success(List.of(items));
+                    return ServiceResponse.success(new ArrayList<>(java.util.Arrays.asList(items)));
                 } else if (itemsNode.isObject()) {
-                    ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
-                    logger.info("Backend product API returned 1 item");
-                    return ServiceResponse.success(List.of(item));
+                    if (itemsNode.has("product_name")) {
+                        ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
+                        logger.info("Backend product API returned 1 item");
+                        return ServiceResponse.success(new ArrayList<>(java.util.Collections.singletonList(item)));
+                    } else {
+                        List<ProductItem> items = new ArrayList<>();
+                        java.util.Iterator<java.util.Map.Entry<String, JsonNode>> fields = itemsNode.fields();
+                        while (fields.hasNext()) {
+                            JsonNode value = fields.next().getValue();
+                            try {
+                                items.add(objectMapper.treeToValue(value, ProductItem.class));
+                            } catch (Exception e) {
+                                logger.warn("Failed to parse product from object field", e);
+                            }
+                        }
+                        logger.info("Backend product API returned {} items from object map", items.size());
+                        return ServiceResponse.success(items);
+                    }
                 } else {
                     logger.warn("Backend product API returned success but body/response_body is not an array or object");
                     return ServiceResponse.error("Unexpected API response format");
@@ -152,6 +167,84 @@ public class StatusService {
                 errorMessage = "An error occurred while fetching products. Please contact support.";
             }
             return ServiceResponse.error(errorMessage);
+        }
+    }
+
+    public ServiceResponse<Void> createProduct(ProductItem product, String accessToken) {
+        if (productApiUrl == null) return ServiceResponse.error("Product API not configured");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+            }
+            HttpEntity<ProductItem> entity = new HttpEntity<>(product, headers);
+            ResponseEntity<JsonNode> response = restTemplate.exchange(productApiUrl, HttpMethod.POST, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                String message = "Product created successfully";
+                if (response.getBody() != null && response.getBody().has("message")) {
+                    message = response.getBody().get("message").asText();
+                }
+                return ServiceResponse.successMessage(message);
+            }
+            return ServiceResponse.error("Failed to create product: " + response.getStatusCode());
+        } catch (Exception ex) {
+            logger.error("Error creating product", ex);
+            return ServiceResponse.error("Error creating product: " + ex.getMessage());
+        }
+    }
+
+    public ServiceResponse<Void> updateProduct(String productName, String productDescription, String testCase, String accessToken) {
+        if (productApiUrl == null) return ServiceResponse.error("Product API not configured");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+            }
+            java.util.Map<String, String> body = new java.util.HashMap<>();
+            body.put("product_description", productDescription);
+            if (testCase != null) {
+                body.put("test_case", testCase);
+            }
+            HttpEntity<java.util.Map<String, String>> entity = new HttpEntity<>(body, headers);
+            String url = productApiUrl + "?product_name=" + productName;
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.PUT, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                String message = "Product updated successfully";
+                if (response.getBody() != null && response.getBody().has("message")) {
+                    message = response.getBody().get("message").asText();
+                }
+                return ServiceResponse.successMessage(message);
+            }
+            return ServiceResponse.error("Failed to update product: " + response.getStatusCode());
+        } catch (Exception ex) {
+            logger.error("Error updating product", ex);
+            return ServiceResponse.error("Error updating product: " + ex.getMessage());
+        }
+    }
+
+    public ServiceResponse<Void> deleteProduct(String productName, String accessToken) {
+        if (productApiUrl == null) return ServiceResponse.error("Product API not configured");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+            }
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            String url = productApiUrl + "?product_name=" + productName;
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                String message = "Product deleted successfully";
+                if (response.getBody() != null && response.getBody().has("message")) {
+                    message = response.getBody().get("message").asText();
+                }
+                return ServiceResponse.successMessage(message);
+            }
+            return ServiceResponse.error("Failed to delete product: " + response.getStatusCode());
+        } catch (Exception ex) {
+            logger.error("Error deleting product", ex);
+            return ServiceResponse.error("Error deleting product: " + ex.getMessage());
         }
     }
 
