@@ -2,6 +2,7 @@ package hdc.company.monitor.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hdc.company.monitor.model.ServiceResponse;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class StatusServiceTest {
     void whenNotConfigured_isConfiguredReturnsFalse() {
         statusService = new StatusService(environment, restTemplate);
         assertFalse(statusService.isConfigured());
-        assertTrue(statusService.getSystemStatusList().isEmpty());
+        assertTrue(statusService.getSystemStatusList().getData().isEmpty());
         assertEquals(List.of(StatusService.STATUS_API_URL_ENV), statusService.getMissingConfiguration());
     }
 
@@ -55,12 +56,6 @@ class StatusServiceTest {
         assertTrue(statusService.getMissingConfiguration().isEmpty());
     }
 
-    @Test
-    void getErrorMessage_returnsLastErrorMessage() {
-        statusService = new StatusService(environment, restTemplate);
-        assertFalse(statusService.hasError());
-        assertNull(statusService.getErrorMessage());
-    }
 
     @Test
     void getSystemStatusList_whenSuccessful_returnsList() {
@@ -77,12 +72,12 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(itemsNode, HttpStatus.OK));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertEquals(2, result.size());
-        assertEquals("sys1", result.get(0).getSystemId());
-        assertEquals("sys2", result.get(1).getSystemId());
-        assertFalse(statusService.hasError());
+        assertEquals(2, result.getData().size());
+        assertEquals("sys1", result.getData().get(0).getSystemId());
+        assertEquals("sys2", result.getData().get(1).getSystemId());
+        assertFalse(result.hasError());
     }
 
     @Test
@@ -100,14 +95,14 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(wrappedNode, HttpStatus.OK));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertEquals(1, result.size());
-        assertEquals("sys1", result.get(0).getSystemId());
-        assertEquals("tc1", result.get(0).getTestCase());
-        assertEquals("pass", result.get(0).getStatus());
-        assertEquals("2023-01-01 00:00:00", result.get(0).getUpdatedAt());
-        assertFalse(statusService.hasError());
+        assertEquals(1, result.getData().size());
+        assertEquals("sys1", result.getData().get(0).getSystemId());
+        assertEquals("tc1", result.getData().get(0).getTestCase());
+        assertEquals("pass", result.getData().get(0).getStatus());
+        assertEquals("2023-01-01 00:00:00", result.getData().get(0).getUpdatedAt());
+        assertFalse(result.hasError());
     }
 
     @Test
@@ -120,11 +115,11 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertTrue(result.isEmpty());
-        assertTrue(statusService.hasError());
-        assertTrue(statusService.getErrorMessage().contains("404"));
+        assertTrue(result.getData().isEmpty());
+        assertTrue(result.hasError());
+        assertTrue(result.getErrorMessage().contains("404"));
     }
 
     @Test
@@ -138,11 +133,11 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenThrow(new RuntimeException("Connection refused"));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertTrue(result.isEmpty());
-        assertTrue(statusService.hasError());
-        assertTrue(statusService.getErrorMessage().contains("Connection refused"));
+        assertTrue(result.getData().isEmpty());
+        assertTrue(result.hasError());
+        assertTrue(result.getErrorMessage().contains("Connection refused"));
     }
 
     @Test
@@ -156,11 +151,11 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenThrow(new RuntimeException("Connection refused"));
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertTrue(result.isEmpty());
-        assertTrue(statusService.hasError());
-        assertEquals("An error occurred while fetching system status. Please contact support.", statusService.getErrorMessage());
+        assertTrue(result.getData().isEmpty());
+        assertTrue(result.hasError());
+        assertEquals("An error occurred while fetching system status. Please contact support.", result.getErrorMessage());
     }
 
     @Test
@@ -178,10 +173,10 @@ class StatusServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenThrow(ex);
 
-        List<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
 
-        assertTrue(result.isEmpty());
-        assertTrue(statusService.hasError());
-        assertEquals("Access Denied: You do not have permission to view system status. Reason: JWT audience mismatch", statusService.getErrorMessage());
+        assertTrue(result.getData().isEmpty());
+        assertTrue(result.hasError());
+        assertEquals("Access Denied: You do not have permission to view system status. Reason: JWT audience mismatch", result.getErrorMessage());
     }
 }

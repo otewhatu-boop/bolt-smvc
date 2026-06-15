@@ -4,6 +4,8 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.core.Authentication;
+import hdc.company.monitor.model.ServiceResponse;
+import hdc.company.monitor.model.SystemStatusItem;
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 import org.slf4j.Logger;
@@ -51,12 +53,13 @@ public class DashboardController {
             logger.error("Failed to retrieve or exchange tokens for Dashboard page", ex);
         }
 
-        model.addAttribute("systemStatusList", statusService.getSystemStatusList(apiAccessToken));
+        ServiceResponse<SystemStatusItem> statusResponse = statusService.getSystemStatusList(apiAccessToken);
+        model.addAttribute("systemStatusList", statusResponse.getData());
 
         if (initialAccessToken != null && apiAccessToken == null) {
             model.addAttribute("statusFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
         } else {
-            model.addAttribute("statusFetchError", statusService.getErrorMessage());
+            model.addAttribute("statusFetchError", statusResponse.getErrorMessage());
         }
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         if (principal instanceof OidcUser oidcUser) {

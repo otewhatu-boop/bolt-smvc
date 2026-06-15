@@ -4,6 +4,8 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.core.Authentication;
+import hdc.company.monitor.model.ProductItem;
+import hdc.company.monitor.model.ServiceResponse;
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
 import org.slf4j.Logger;
@@ -51,12 +53,13 @@ public class ManageController {
             logger.error("Failed to retrieve or exchange tokens for Manage page", ex);
         }
 
-        model.addAttribute("productList", statusService.getProductList(apiAccessToken));
+        ServiceResponse<ProductItem> productResponse = statusService.getProductList(apiAccessToken);
+        model.addAttribute("productList", productResponse.getData());
 
         if (initialAccessToken != null && apiAccessToken == null) {
             model.addAttribute("productFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
         } else {
-            model.addAttribute("productFetchError", statusService.getErrorMessage());
+            model.addAttribute("productFetchError", productResponse.getErrorMessage());
         }
         model.addAttribute("statusConfigMissing", statusService.getMissingConfiguration());
         if (principal instanceof OidcUser oidcUser) {

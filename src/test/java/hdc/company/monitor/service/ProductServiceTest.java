@@ -3,6 +3,7 @@ package hdc.company.monitor.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hdc.company.monitor.model.ProductItem;
+import hdc.company.monitor.model.ServiceResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +51,11 @@ class ProductServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(itemsNode, HttpStatus.OK));
 
-        List<ProductItem> result = statusService.getProductList("test-token");
+        ServiceResponse<ProductItem> result = statusService.getProductList("test-token");
 
-        assertEquals(2, result.size());
-        assertEquals("prod1", result.get(0).getProductName());
-        assertEquals("prod2", result.get(1).getProductName());
+        assertEquals(2, result.getData().size());
+        assertEquals("prod1", result.getData().get(0).getProductName());
+        assertEquals("prod2", result.getData().get(1).getProductName());
     }
 
     @Test
@@ -68,11 +69,11 @@ class ProductServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenThrow(new RuntimeException("Connection refused"));
 
-        List<ProductItem> result = statusService.getProductList("test-token");
+        ServiceResponse<ProductItem> result = statusService.getProductList("test-token");
 
-        assertTrue(result.isEmpty());
-        assertTrue(statusService.hasError());
-        assertEquals("An error occurred while fetching products. Please contact support.", statusService.getErrorMessage());
+        assertTrue(result.getData().isEmpty());
+        assertTrue(result.hasError());
+        assertEquals("An error occurred while fetching products. Please contact support.", result.getErrorMessage());
     }
 
     @Test
@@ -90,9 +91,9 @@ class ProductServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(wrappedNode, HttpStatus.OK));
 
-        List<ProductItem> result = statusService.getProductList("test-token");
+        ServiceResponse<ProductItem> result = statusService.getProductList("test-token");
 
-        assertEquals(1, result.size());
-        assertEquals("prod1", result.get(0).getProductName());
+        assertEquals(1, result.getData().size());
+        assertEquals("prod1", result.getData().get(0).getProductName());
     }
 }

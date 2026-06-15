@@ -3,6 +3,7 @@ package hdc.company.monitor.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hdc.company.monitor.model.ProductItem;
+import hdc.company.monitor.model.ServiceResponse;
 import hdc.company.monitor.model.SystemStatusItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,6 @@ public class StatusService {
     private final String statusApiUrl;
     private final String productApiUrl;
     private final ObjectMapper objectMapper;
-    private String lastErrorMessage = null;
 
     @Autowired
     public StatusService(Environment environment) {
@@ -96,12 +96,10 @@ public class StatusService {
         return normalized + "/" + path;
     }
 
-    public List<ProductItem> getProductList(String accessToken) {
-        lastErrorMessage = null;
-
+    public ServiceResponse<ProductItem> getProductList(String accessToken) {
         if (productApiUrl == null) {
             logger.debug("Product backend is not configured; returning empty list.");
-            return Collections.emptyList();
+            return ServiceResponse.success(Collections.emptyList());
         }
 
         try {
@@ -124,38 +122,36 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     ProductItem[] items = objectMapper.treeToValue(itemsNode, ProductItem[].class);
                     logger.info("Backend product API returned {} items", items.length);
-                    return List.of(items);
+                    return ServiceResponse.success(List.of(items));
                 } else if (itemsNode.isObject()) {
                     ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
                     logger.info("Backend product API returned 1 item");
-                    return List.of(item);
+                    return ServiceResponse.success(List.of(item));
                 } else {
                     logger.warn("Backend product API returned success but body/response_body is not an array or object");
-                    lastErrorMessage = "Unexpected API response format";
-                    return Collections.emptyList();
+                    return ServiceResponse.error("Unexpected API response format");
                 }
             }
-            lastErrorMessage = "Backend returned status " + response.getStatusCode();
+            return ServiceResponse.error("Backend returned status " + response.getStatusCode());
         } catch (HttpClientErrorException.Unauthorized ex) {
-            lastErrorMessage = "Access Denied: You do not have permission to view products.";
             logger.warn("Unauthorized access to backend product API");
+            return ServiceResponse.error("Access Denied: You do not have permission to view products.");
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend products from {}: {}", productApiUrl, ex.getMessage());
+            String errorMessage;
             if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
-                lastErrorMessage = "Error fetching products: " + ex.getMessage();
+                errorMessage = "Error fetching products: " + ex.getMessage();
             } else {
-                lastErrorMessage = "An error occurred while fetching products. Please contact support.";
+                errorMessage = "An error occurred while fetching products. Please contact support.";
             }
+            return ServiceResponse.error(errorMessage);
         }
-        return Collections.emptyList();
     }
 
-    public List<SystemStatusItem> getSystemStatusList(String accessToken) {
-        lastErrorMessage = null;
-        
+    public ServiceResponse<SystemStatusItem> getSystemStatusList(String accessToken) {
         if (statusApiUrl == null) {
             logger.debug("System status backend is not configured; returning empty list.");
-            return Collections.emptyList();
+            return ServiceResponse.success(Collections.emptyList());
         }
 
         try {
@@ -181,15 +177,14 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     SystemStatusItem[] items = objectMapper.treeToValue(itemsNode, SystemStatusItem[].class);
                     logger.info("Backend system status API returned {} items", items.length);
-                    return List.of(items);
+                    return ServiceResponse.success(List.of(items));
                 } else {
                     logger.warn("Backend system status API returned success but body/response_body is not an array");
-                    lastErrorMessage = "Unexpected API response format";
-                    return Collections.emptyList();
+                    return ServiceResponse.error("Unexpected API response format");
                 }
             }
             logger.warn("Backend system status API returned {} with no body", response.getStatusCode());
-            lastErrorMessage = "Backend returned status " + response.getStatusCode();
+            return ServiceResponse.error("Backend returned status " + response.getStatusCode());
         } catch (HttpClientErrorException.Unauthorized ex) {
             String body = ex.getResponseBodyAsString();
             String reason = null;
@@ -202,37 +197,32 @@ public class StatusService {
                 logger.debug("Could not parse 401 error response body as JSON: {}", body);
             }
 
+            String errorMessage;
             if (reason != null) {
-                lastErrorMessage = "Access Denied: You do not have permission to view system status. Reason: " + reason;
+                errorMessage = "Access Denied: You do not have permission to view system status. Reason: " + reason;
             } else {
-                lastErrorMessage = "Access Denied: You do not have permission to view system status.";
+                errorMessage = "Access Denied: You do not have permission to view system status.";
             }
-            logger.warn("Unauthorized access to backend system status API: {}", lastErrorMessage);
+            logger.warn("Unauthorized access to backend system status API: {}", errorMessage);
+            return ServiceResponse.error(errorMessage);
         } catch (Exception ex) {
             logger.warn("Failed to fetch backend system status from {}: {}", statusApiUrl, ex.getMessage(), ex);
+            String errorMessage;
             if ("development".equalsIgnoreCase(environment.getProperty(APP_ENV_ENV))) {
-                lastErrorMessage = "Error fetching status: " + ex.getMessage();
+                errorMessage = "Error fetching status: " + ex.getMessage();
             } else {
-                lastErrorMessage = "An error occurred while fetching system status. Please contact support.";
+                errorMessage = "An error occurred while fetching system status. Please contact support.";
             }
+            return ServiceResponse.error(errorMessage);
         }
-        return Collections.emptyList();
     }
 
-    public List<SystemStatusItem> getSystemStatusList() {
+    public ServiceResponse<SystemStatusItem> getSystemStatusList() {
         return getSystemStatusList(null);
     }
 
     public boolean isConfigured() {
         return statusApiUrl != null;
-    }
-
-    public boolean hasError() {
-        return lastErrorMessage != null;
-    }
-
-    public String getErrorMessage() {
-        return lastErrorMessage;
     }
 
     public List<String> getMissingConfiguration() {
