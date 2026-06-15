@@ -37,6 +37,29 @@ class ProductServiceTest {
     }
 
     @Test
+    void getProductList_whenObjectMapSuccessful_returnsList() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        com.fasterxml.jackson.databind.node.ObjectNode mapNode = mapper.createObjectNode();
+        mapNode.set("key1", mapper.createObjectNode().put("product_name", "prod1").put("product_description", "desc1"));
+        mapNode.set("key2", mapper.createObjectNode().put("product_name", "prod2").put("product_description", "desc2"));
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(mapNode, HttpStatus.OK));
+
+        ServiceResponse<ProductItem> result = statusService.getProductList("test-token");
+
+        assertEquals(2, result.getData().size());
+        // Since it's a map, order might not be guaranteed, but we check presence
+        assertTrue(result.getData().stream().anyMatch(p -> "prod1".equals(p.getProductName())));
+        assertTrue(result.getData().stream().anyMatch(p -> "prod2".equals(p.getProductName())));
+    }
+
+    @Test
     void getProductList_whenSuccessful_returnsList() {
         String baseUrl = "http://localhost/api";
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);

@@ -301,8 +301,13 @@
                             <td th:text="${product.productDescription}">Description</td>
                             <td th:text="${product.testCase}">Test Case</td>
                             <td>
-                                <button class="btn btn-primary" th:onclick="'openEditModal(\'' + ${product.productName} + '\', \'' + ${product.productDescription} + '\')'">Edit</button>
-                                <button class="btn btn-danger" th:onclick="'openDeleteModal(\'' + ${product.productName} + '\')'">Delete</button>
+                                <button class="btn btn-primary"
+                                        th:data-name="${product.productName}"
+                                        th:data-description="${product.productDescription}"
+                                        onclick="openEditModalFromData(this)">Edit</button>
+                                <button class="btn btn-danger"
+                                        th:data-name="${product.productName}"
+                                        onclick="openDeleteModalFromData(this)">Delete</button>
                             </td>
                         </tr>
                     </tbody>
@@ -390,6 +395,17 @@
     <script th:inline="javascript">
         function openCreateModal() {
             document.getElementById('createModal').style.display = 'block';
+        }
+
+        function openEditModalFromData(button) {
+            const name = button.getAttribute('data-name');
+            const description = button.getAttribute('data-description');
+            openEditModal(name, description);
+        }
+
+        function openDeleteModalFromData(button) {
+            const name = button.getAttribute('data-name');
+            openDeleteModal(name);
         }
 
         function openEditModal(name, description) {

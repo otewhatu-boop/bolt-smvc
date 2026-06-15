@@ -129,11 +129,26 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     ProductItem[] items = objectMapper.treeToValue(itemsNode, ProductItem[].class);
                     logger.info("Backend product API returned {} items", items.length);
-                    return ServiceResponse.success(List.of(items));
+                    return ServiceResponse.success(new ArrayList<>(java.util.Arrays.asList(items)));
                 } else if (itemsNode.isObject()) {
-                    ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
-                    logger.info("Backend product API returned 1 item");
-                    return ServiceResponse.success(List.of(item));
+                    if (itemsNode.has("product_name")) {
+                        ProductItem item = objectMapper.treeToValue(itemsNode, ProductItem.class);
+                        logger.info("Backend product API returned 1 item");
+                        return ServiceResponse.success(new ArrayList<>(java.util.Collections.singletonList(item)));
+                    } else {
+                        List<ProductItem> items = new ArrayList<>();
+                        java.util.Iterator<java.util.Map.Entry<String, JsonNode>> fields = itemsNode.fields();
+                        while (fields.hasNext()) {
+                            JsonNode value = fields.next().getValue();
+                            try {
+                                items.add(objectMapper.treeToValue(value, ProductItem.class));
+                            } catch (Exception e) {
+                                logger.warn("Failed to parse product from object field", e);
+                            }
+                        }
+                        logger.info("Backend product API returned {} items from object map", items.size());
+                        return ServiceResponse.success(items);
+                    }
                 } else {
                     logger.warn("Backend product API returned success but body/response_body is not an array or object");
                     return ServiceResponse.error("Unexpected API response format");
