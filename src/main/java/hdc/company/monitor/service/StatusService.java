@@ -248,6 +248,35 @@ public class StatusService {
         }
     }
 
+    public ServiceResponse<Void> deleteSystemStatus(String systemId, String testCase, String accessToken) {
+        if (statusApiUrl == null) return ServiceResponse.error("Status API not configured");
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            if (accessToken != null && !accessToken.isBlank()) {
+                headers.setBearerAuth(accessToken);
+            }
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            String url = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(statusApiUrl)
+                    .queryParam("system_id", systemId)
+                    .queryParamIfPresent("test_case", java.util.Optional.ofNullable(testCase)
+                            .filter(tc -> !tc.isBlank() && !"N/A".equals(tc)))
+                    .build()
+                    .toUriString();
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, JsonNode.class);
+            if (response.getStatusCode().is2xxSuccessful()) {
+                String message = "System status record deleted successfully";
+                if (response.getBody() != null && response.getBody().has("message")) {
+                    message = response.getBody().get("message").asText();
+                }
+                return ServiceResponse.successMessage(message);
+            }
+            return ServiceResponse.error("Failed to delete system status: " + response.getStatusCode());
+        } catch (Exception ex) {
+            logger.error("Error deleting system status", ex);
+            return ServiceResponse.error("Error deleting system status: " + ex.getMessage());
+        }
+    }
+
     public ServiceResponse<SystemStatusItem> getSystemStatusList(String accessToken) {
         if (statusApiUrl == null) {
             logger.debug("System status backend is not configured; returning empty list.");
