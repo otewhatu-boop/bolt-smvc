@@ -221,7 +221,7 @@ class StatusServiceTest {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.createObjectNode().put("message", "System status record deleted successfully");
 
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
+        when(restTemplate.exchange(eq(java.net.URI.create(expectedUrl)), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
         ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", "tc1", "token");
@@ -241,7 +241,7 @@ class StatusServiceTest {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.createObjectNode().put("message", "System status record deleted successfully");
 
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
+        when(restTemplate.exchange(eq(java.net.URI.create(expectedUrl)), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
         ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", null, "token");

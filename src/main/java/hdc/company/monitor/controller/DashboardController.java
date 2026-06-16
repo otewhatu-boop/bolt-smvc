@@ -41,25 +41,12 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpServletRequest request, Model model) {
         model.addAttribute("version", getAppVersion());
-        String initialAccessToken = null;
-        String apiAccessToken = null;
-        try {
-            if (principal instanceof Authentication authentication) {
-                OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
-                    "entra", authentication, request);
-                if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-                    initialAccessToken = authorizedClient.getAccessToken().getTokenValue();
-                    apiAccessToken = oboService.getOboToken(initialAccessToken);
-                }
-            }
-        } catch (Exception ex) {
-            logger.error("Failed to retrieve or exchange tokens for Dashboard page", ex);
-        }
+        String apiAccessToken = getApiAccessToken(principal, request);
 
         ServiceResponse<SystemStatusItem> statusResponse = statusService.getSystemStatusList(apiAccessToken);
         model.addAttribute("systemStatusList", statusResponse.getData());
 
-        if (initialAccessToken != null && apiAccessToken == null) {
+        if (principal instanceof Authentication && apiAccessToken == null) {
             model.addAttribute("statusFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
         } else {
             model.addAttribute("statusFetchError", statusResponse.getErrorMessage());
