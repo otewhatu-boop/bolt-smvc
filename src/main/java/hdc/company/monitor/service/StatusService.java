@@ -208,11 +208,8 @@ public class StatusService {
                 body.put("test_case", testCase);
             }
             HttpEntity<java.util.Map<String, String>> entity = new HttpEntity<>(body, headers);
-            java.net.URI url = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(productApiUrl)
-                    .queryParam("product_name", productName)
-                    .build()
-                    .toUri();
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.PUT, entity, JsonNode.class);
+            String urlTemplate = productApiUrl + "?product_name={productName}";
+            ResponseEntity<JsonNode> response = restTemplate.exchange(urlTemplate, HttpMethod.PUT, entity, JsonNode.class, productName);
             if (response.getStatusCode().is2xxSuccessful()) {
                 String message = "Product updated successfully";
                 if (response.getBody() != null && response.getBody().has("message")) {
@@ -235,11 +232,8 @@ public class StatusService {
                 headers.setBearerAuth(accessToken);
             }
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            java.net.URI url = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(productApiUrl)
-                    .queryParam("product_name", productName)
-                    .build()
-                    .toUri();
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, JsonNode.class);
+            String urlTemplate = productApiUrl + "?product_name={productName}";
+            ResponseEntity<JsonNode> response = restTemplate.exchange(urlTemplate, HttpMethod.DELETE, entity, JsonNode.class, productName);
             if (response.getStatusCode().is2xxSuccessful()) {
                 String message = "Product deleted successfully";
                 if (response.getBody() != null && response.getBody().has("message")) {
@@ -262,13 +256,16 @@ public class StatusService {
                 headers.setBearerAuth(accessToken);
             }
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-            java.net.URI url = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(statusApiUrl)
-                    .queryParam("system_id", systemId)
-                    .queryParamIfPresent("test_case", java.util.Optional.ofNullable(testCase)
-                            .filter(tc -> !tc.isBlank() && !"N/A".equals(tc)))
-                    .build()
-                    .toUri();
-            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, JsonNode.class);
+            String urlTemplate;
+            ResponseEntity<JsonNode> response;
+            boolean hasTestCase = testCase != null && !testCase.isBlank() && !"N/A".equals(testCase);
+            if (hasTestCase) {
+                urlTemplate = statusApiUrl + "?system_id={systemId}&test_case={testCase}";
+                response = restTemplate.exchange(urlTemplate, HttpMethod.DELETE, entity, JsonNode.class, systemId, testCase);
+            } else {
+                urlTemplate = statusApiUrl + "?system_id={systemId}";
+                response = restTemplate.exchange(urlTemplate, HttpMethod.DELETE, entity, JsonNode.class, systemId);
+            }
             if (response.getStatusCode().is2xxSuccessful()) {
                 String message = "System status record deleted successfully";
                 if (response.getBody() != null && response.getBody().has("message")) {
