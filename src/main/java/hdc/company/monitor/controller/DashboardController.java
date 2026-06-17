@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.security.Principal;
@@ -38,25 +41,12 @@ public class DashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Principal principal, HttpServletRequest request, Model model) {
         model.addAttribute("version", getAppVersion());
-        String initialAccessToken = null;
-        String apiAccessToken = null;
-        try {
-            if (principal instanceof Authentication authentication) {
-                OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
-                    "entra", authentication, request);
-                if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-                    initialAccessToken = authorizedClient.getAccessToken().getTokenValue();
-                    apiAccessToken = oboService.getOboToken(initialAccessToken);
-                }
-            }
-        } catch (Exception ex) {
-            logger.error("Failed to retrieve or exchange tokens for Dashboard page", ex);
-        }
+        String apiAccessToken = getApiAccessToken(principal, request);
 
         ServiceResponse<SystemStatusItem> statusResponse = statusService.getSystemStatusList(apiAccessToken);
         model.addAttribute("systemStatusList", statusResponse.getData());
 
-        if (initialAccessToken != null && apiAccessToken == null) {
+        if (principal instanceof Authentication && apiAccessToken == null) {
             model.addAttribute("statusFetchError", "Failed to obtain OBO token for PHP API. Ensure Admin Consent is granted for scope: " + oboService.getPhpApiScope());
         } else {
             model.addAttribute("statusFetchError", statusResponse.getErrorMessage());
@@ -67,6 +57,35 @@ public class DashboardController {
             model.addAttribute("userEmail", oidcUser.getEmail());
         }
         return "dashboard";
+    }
+
+    @PostMapping("/dashboard/delete")
+    public String deleteStatus(@RequestParam("systemId") String systemId,
+                               @RequestParam(value = "testCase", required = false) String testCase,
+                               Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        String apiAccessToken = getApiAccessToken(principal, request);
+        ServiceResponse<Void> response = statusService.deleteSystemStatus(systemId, testCase, apiAccessToken);
+        if (response.hasError()) {
+            redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
+        } else {
+            redirectAttributes.addFlashAttribute("successMessage", response.getMessage());
+        }
+        return "redirect:/dashboard";
+    }
+
+    private String getApiAccessToken(Principal principal, HttpServletRequest request) {
+        try {
+            if (principal instanceof Authentication authentication) {
+                OAuth2AuthorizedClient authorizedClient = authorizedClientRepository.loadAuthorizedClient(
+                    "entra", authentication, request);
+                if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
+                    return oboService.getOboToken(authorizedClient.getAccessToken().getTokenValue());
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to retrieve or exchange tokens", ex);
+        }
+        return null;
     }
 
     private String getAppVersion() {

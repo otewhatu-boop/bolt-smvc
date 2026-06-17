@@ -147,12 +147,12 @@ class ProductServiceTest {
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
-        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name=prod1";
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name={productName}";
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.createObjectNode().put("message", "Product updated successfully");
 
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.PUT), any(), eq(JsonNode.class)))
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.PUT), any(), eq(JsonNode.class), eq("prod1")))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
         ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "newTC", "token");
@@ -167,12 +167,12 @@ class ProductServiceTest {
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
-        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name=prod1";
+        String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH + "?product_name={productName}";
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode responseNode = mapper.createObjectNode().put("message", "Product deleted successfully");
 
-        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class)))
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("prod1")))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
         ServiceResponse<Void> result = statusService.deleteProduct("prod1", "token");

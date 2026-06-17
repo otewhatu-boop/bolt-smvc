@@ -119,6 +119,78 @@
             font-weight: 600;
         }
 
+        .action-column {
+            width: 100px;
+        }
+
+        .btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .close {
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -183,6 +255,9 @@
             <p th:if="${userEmail}">Email: <span th:text="${userEmail}">email@example.com</span></p>
         </div>
 
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
         <div class="status-panel">
             <h2>System Status</h2>
             <div th:if="${statusFetchError != null}">
@@ -203,6 +278,7 @@
                             <th>Test Case</th>
                             <th>Status</th>
                             <th>Last Updated</th>
+                            <th class="action-column">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -215,6 +291,12 @@
                                 </span>
                             </td>
                             <td th:text="${status.updatedAt}">2025-12-14 10:30:45</td>
+                            <td>
+                                <button class="btn btn-danger"
+                                        th:data-id="${status.systemId}"
+                                        th:data-testcase="${status.testCase}"
+                                        onclick="openDeleteModalFromData(this)">Delete</button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -226,5 +308,63 @@
     <footer>
         <p>Version: <span th:text="${version}">0.0.0</span></p>
     </footer>
+
+    <!-- Delete Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Status Record</h2>
+                <span class="close" onclick="closeModal('deleteModal')">&times;</span>
+            </div>
+            <p>Are you sure you want to delete the status record for system <span id="deleteSystemIdDisplay" style="font-weight: bold;"></span>?</p>
+            <p id="deleteTestCaseDisplayContainer" style="display: none;">Test Case: <span id="deleteTestCaseDisplay" style="font-weight: bold;"></span></p>
+            <form th:action="@{/dashboard/delete}" method="post">
+                <input type="hidden" id="deleteSystemId" name="systemId">
+                <input type="hidden" id="deleteTestCase" name="testCase">
+                <div style="text-align: right; margin-top: 1.5rem;">
+                    <button type="button" class="btn" onclick="closeModal('deleteModal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function openDeleteModalFromData(button) {
+            const systemId = button.getAttribute('data-id');
+            const testCase = button.getAttribute('data-testcase');
+            openDeleteModal(systemId, testCase);
+        }
+
+        function openDeleteModal(systemId, testCase) {
+            document.getElementById('deleteSystemId').value = systemId;
+            document.getElementById('deleteSystemIdDisplay').innerText = systemId;
+
+            const tcInput = document.getElementById('deleteTestCase');
+            const tcDisplay = document.getElementById('deleteTestCaseDisplay');
+            const tcContainer = document.getElementById('deleteTestCaseDisplayContainer');
+
+            if (testCase && testCase !== 'N/A' && testCase !== 'null') {
+                tcInput.value = testCase;
+                tcDisplay.innerText = testCase;
+                tcContainer.style.display = 'block';
+            } else {
+                tcInput.value = '';
+                tcContainer.style.display = 'none';
+            }
+
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

@@ -177,6 +177,8 @@ mvn clean
 
 - **Login Interface**: Clean, responsive login form (placeholder functionality)
 - **Product Management**: Full CRUD operations for system products (Create, Read, Update, Delete).
+- **System Dashboard**: View real-time status of all monitored systems.
+- **Status Record Deletion**: Delete individual status records from the dashboard. This is limited to **delete only** because health-probes are responsible for creating and updating these records automatically.
 - **Version Display**: Shows application version from `version.properties`
 - **Responsive Design**: Mobile-friendly interface
 - **Spring MVC**: RESTful controller architecture

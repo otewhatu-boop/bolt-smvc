@@ -209,4 +209,44 @@ class StatusServiceTest {
         assertTrue(result.hasError());
         assertEquals("Access Denied: You do not have permission to view system status. Reason: JWT audience mismatch", result.getErrorMessage());
     }
+
+    @Test
+    void deleteSystemStatus_whenSuccessful_returnsSuccess() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}&test_case={testCase}";
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.createObjectNode().put("message", "System status record deleted successfully");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1"), eq("tc1")))
+            .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", "tc1", "token");
+
+        assertFalse(result.hasError());
+        assertEquals("System status record deleted successfully", result.getMessage());
+    }
+
+    @Test
+    void deleteSystemStatus_withoutTestCase_returnsSuccess() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode responseNode = mapper.createObjectNode().put("message", "System status record deleted successfully");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", null, "token");
+
+        assertFalse(result.hasError());
+        assertEquals("System status record deleted successfully", result.getMessage());
+    }
 }
