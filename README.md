@@ -67,6 +67,8 @@ The Cobertura XML report is generated automatically during the package phase by 
 
 ## Running Locally
 
+To load from a .env file use `export $(cat .env | xargs) && mvn clean package cargo:run -DskipTests`
+
 ### Using Cargo Maven Plugin (Recommended for Development)
 
 The `cargo-maven3-plugin` is configured in `pom.xml`, so you can run:
