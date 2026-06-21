@@ -42,10 +42,6 @@ public class StatusService {
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public StatusService(Environment environment) {
-        this(environment, new RestTemplate());
-    }
-
     public StatusService(Environment environment, RestTemplate restTemplate) {
         this.environment = environment;
         this.restTemplate = restTemplate;
@@ -55,30 +51,6 @@ public class StatusService {
         this.apiBaseUrl = rawUrl != null ? normalizeBaseUrl(rawUrl) : null;
         this.statusApiUrl = apiBaseUrl != null ? buildUrl(STATUS_API_PATH) : null;
         this.productApiUrl = apiBaseUrl != null ? buildUrl(PRODUCT_API_PATH) : null;
-
-        // Ensure RestTemplate can read JSON even when server responds with text/html
-        try {
-            List<HttpMessageConverter<?>> converters = this.restTemplate.getMessageConverters();
-            boolean jacksonFound = false;
-            for (HttpMessageConverter<?> c : converters) {
-                if (c instanceof MappingJackson2HttpMessageConverter mj) {
-                    jacksonFound = true;
-                    List<MediaType> types = new ArrayList<>(mj.getSupportedMediaTypes());
-                    if (!types.contains(MediaType.TEXT_HTML)) {
-                        types.add(MediaType.TEXT_HTML);
-                        mj.setSupportedMediaTypes(types);
-                    }
-                    break;
-                }
-            }
-            if (!jacksonFound) {
-                MappingJackson2HttpMessageConverter mj = new MappingJackson2HttpMessageConverter();
-                mj.setSupportedMediaTypes(List.of(MediaType.APPLICATION_JSON, MediaType.TEXT_HTML));
-                this.restTemplate.getMessageConverters().add(0, mj);
-            }
-        } catch (Exception ex) {
-            logger.warn("Unable to configure RestTemplate message converters to accept text/html", ex);
-        }
 
         if (apiBaseUrl != null) {
             logger.info("API base URL resolved to [{}]", apiBaseUrl);

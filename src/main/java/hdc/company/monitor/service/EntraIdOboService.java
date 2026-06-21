@@ -3,8 +3,8 @@ package hdc.company.monitor.service;
 import hdc.company.monitor.config.EntraIdProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -21,10 +21,10 @@ public class EntraIdOboService {
     private final EntraIdProperties properties;
     private final RestTemplate restTemplate;
 
-    public EntraIdOboService(EntraIdProperties properties) {
+    @Autowired
+    public EntraIdOboService(EntraIdProperties properties, RestTemplate restTemplate) {
         this.properties = properties;
-        this.restTemplate = new RestTemplate();
-        this.restTemplate.getMessageConverters().add(0, new MappingJackson2HttpMessageConverter());
+        this.restTemplate = restTemplate;
     }
 
     /**
