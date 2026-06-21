@@ -28,6 +28,7 @@ import java.util.Set;
 
 import hdc.company.monitor.service.EntraIdOboService;
 import hdc.company.monitor.service.StatusService;
+import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,7 +48,7 @@ public class ControllerUnitTest {
     void shouldReturnDashboardAndPopulateOidcUserAttributes() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment(), new RestTemplate()), oboService, authorizedClientRepository);
         OidcIdToken idToken = new OidcIdToken("token", Instant.now(), Instant.now().plusSeconds(60), Map.of("preferred_username", "jules", "email", "jules@example.com", "name", "Jules"));
         TestOidcPrincipal oidcUser = new TestOidcPrincipal(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken, "email");
 
@@ -211,7 +212,7 @@ public class ControllerUnitTest {
     void shouldReturnDashboardViewWhenPrincipalIsNotOidcUser() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment(), new RestTemplate()), oboService, authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
@@ -230,7 +231,7 @@ public class ControllerUnitTest {
     void shouldHandleMissingBackendConfiguration() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment()), oboService, authorizedClientRepository);
+        DashboardController controller = new DashboardController(new StatusService(new MockEnvironment(), new RestTemplate()), oboService, authorizedClientRepository);
         ExtendedModelMap model = new ExtendedModelMap();
 
         String view = controller.dashboard(new Principal() {
