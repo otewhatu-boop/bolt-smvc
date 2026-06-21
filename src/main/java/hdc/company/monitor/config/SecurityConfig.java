@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizati
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.web.client.RestClient;
+import hdc.company.monitor.util.CorrelationInterceptor;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -182,6 +183,7 @@ public class SecurityConfig {
                     messageConverters.add(new FormHttpMessageConverter());
                     messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
                 })
+                .requestInterceptor(new CorrelationInterceptor())
                 .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
                 .build();
 
