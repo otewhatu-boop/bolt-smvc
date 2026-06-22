@@ -38,8 +38,7 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
     private static final String OTLP_METRICS_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT";
     private static final String OTLP_PROTOCOL_PROPERTY = "otel.exporter.otlp.protocol";
     private static final String OTLP_PROTOCOL_ENV = "OTEL_EXPORTER_OTLP_PROTOCOL";
-    private static final String SUMO_AUTHORIZATION_HEADER = "Authorization";
-    private static final String SUMO_AUTHORIZATION_VALUE_PREFIX = "x-sumo-token:";
+    private static final String SUMO_TOKEN_HEADER = "x-sumo-token";
     private static final String[] DIAGNOSTIC_ENVIRONMENT_VARIABLES = {
             "OTEL_SERVICE_NAME",
             "OTEL_RESOURCE_ATTRIBUTES",
@@ -93,7 +92,7 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
         if (isConfigured(sumoToken)) {
             System.setProperty(
                     OTLP_HEADERS_PROPERTY,
-                    SUMO_AUTHORIZATION_HEADER + "=" + SUMO_AUTHORIZATION_VALUE_PREFIX + " " + sumoToken.trim()
+                    SUMO_TOKEN_HEADER + "=" + sumoToken.trim()
             );
         }
     }
@@ -228,9 +227,9 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
 
     private static String maskHeaderValue(String value) {
         String trimmed = value.trim();
-        if (trimmed.startsWith(SUMO_AUTHORIZATION_HEADER + "=") && trimmed.contains(SUMO_AUTHORIZATION_VALUE_PREFIX)) {
-            String token = trimmed.substring(trimmed.indexOf(SUMO_AUTHORIZATION_VALUE_PREFIX) + SUMO_AUTHORIZATION_VALUE_PREFIX.length());
-            return SUMO_AUTHORIZATION_HEADER + "=" + SUMO_AUTHORIZATION_VALUE_PREFIX + " " + sha256Mask(token);
+        if (trimmed.startsWith(SUMO_TOKEN_HEADER + "=")) {
+            String token = trimmed.substring(trimmed.indexOf('=') + 1);
+            return SUMO_TOKEN_HEADER + "=" + sha256Mask(token);
         }
         return "<configured>";
     }
