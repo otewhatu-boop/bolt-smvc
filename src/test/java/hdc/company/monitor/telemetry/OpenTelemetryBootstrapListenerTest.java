@@ -96,19 +96,19 @@ public class OpenTelemetryBootstrapListenerTest {
 
     @Test
     void configureOtlpEndpointCompatibility_setsSignalEndpointsAndBaseWhenPathPresent() {
-        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/v1/traces");
+        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/otlp");
         OpenTelemetryBootstrapListener listener = new OpenTelemetryBootstrapListener();
         assertDoesNotThrow(() -> listener.contextInitialized(mock(ServletContextEvent.class)));
         assertEquals("https://collector.example.com", System.getProperty(OTLP_ENDPOINT_PROP));
-        assertEquals("https://collector.example.com/v1/logs", System.getProperty(OTLP_LOGS_ENDPOINT_PROP));
-        assertEquals("https://collector.example.com/v1/traces", System.getProperty(OTLP_TRACES_ENDPOINT_PROP));
-        assertEquals("https://collector.example.com/v1/metrics", System.getProperty(OTLP_METRICS_ENDPOINT_PROP));
+        assertEquals("https://collector.example.com/otlp/v1/logs", System.getProperty(OTLP_LOGS_ENDPOINT_PROP));
+        assertEquals("https://collector.example.com/otlp/v1/traces", System.getProperty(OTLP_TRACES_ENDPOINT_PROP));
+        assertEquals("https://collector.example.com/otlp/v1/metrics", System.getProperty(OTLP_METRICS_ENDPOINT_PROP));
         assertEquals("http/protobuf", System.getProperty(OTLP_PROTOCOL_PROP));
     }
 
     @Test
     void configureOtlpEndpointCompatibility_doesNotOverrideExistingSignalEndpoints() {
-        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/v1/traces");
+        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/otlp");
         System.setProperty(OTLP_LOGS_ENDPOINT_PROP, "https://custom-logs.example.com/v1/logs");
         OpenTelemetryBootstrapListener listener = new OpenTelemetryBootstrapListener();
         assertDoesNotThrow(() -> listener.contextInitialized(mock(ServletContextEvent.class)));
@@ -117,7 +117,7 @@ public class OpenTelemetryBootstrapListenerTest {
 
     @Test
     void configureOtlpEndpointCompatibility_doesNotOverrideExistingProtocol() {
-        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/v1/traces");
+        System.setProperty(OTLP_ENDPOINT_PROP, "https://collector.example.com/otlp");
         System.setProperty(OTLP_PROTOCOL_PROP, "grpc");
         OpenTelemetryBootstrapListener listener = new OpenTelemetryBootstrapListener();
         assertDoesNotThrow(() -> listener.contextInitialized(mock(ServletContextEvent.class)));
