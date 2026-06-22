@@ -61,4 +61,23 @@ public class WebConfigTest {
         assertEquals(true, registry.hasMappingForPattern("/favicon.svg"));
         assertEquals(true, registry.hasMappingForPattern("/static/**"));
     }
+
+    @Test
+    public void shouldCreateRestTemplateWithCorrelationInterceptor() {
+        org.springframework.web.client.RestTemplate restTemplate = config.restTemplate();
+
+        assertNotNull(restTemplate, "RestTemplate should be created");
+        boolean hasCorrelationInterceptor = restTemplate.getInterceptors().stream()
+                .anyMatch(i -> i instanceof hdc.company.monitor.util.CorrelationInterceptor);
+        assertEquals(true, hasCorrelationInterceptor);
+    }
+
+    @Test
+    public void shouldCreatePasswordEncoder() {
+        org.springframework.security.crypto.password.PasswordEncoder encoder = config.passwordEncoder();
+
+        assertNotNull(encoder, "PasswordEncoder should be created");
+        String encoded = encoder.encode("secret");
+        assertEquals(true, encoder.matches("secret", encoded));
+    }
 }
