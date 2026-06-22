@@ -249,4 +249,221 @@ class StatusServiceTest {
         assertFalse(result.hasError());
         assertEquals("System status record deleted successfully", result.getMessage());
     }
+
+    @Test
+    void getSystemStatusList_whenUnauthorizedWithoutReason_returnsGenericAccessDenied() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        String responseBody = "{\"error\":\"Unauthorized\"}";
+
+        HttpClientErrorException.Unauthorized ex = (HttpClientErrorException.Unauthorized) HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, responseBody.getBytes(), StandardCharsets.UTF_8);
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenThrow(ex);
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.hasError());
+        assertEquals("Access Denied: You do not have permission to view system status.", result.getErrorMessage());
+        assertFalse(result.getErrorMessage().contains("Reason:"));
+    }
+
+    @Test
+    void getSystemStatusList_whenUnauthorizedWithMalformedJsonBody_returnsGenericAccessDenied() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        String responseBody = "<html>error</html>";
+
+        HttpClientErrorException.Unauthorized ex = (HttpClientErrorException.Unauthorized) HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "Unauthorized", HttpHeaders.EMPTY, responseBody.getBytes(), StandardCharsets.UTF_8);
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenThrow(ex);
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.hasError());
+        assertEquals("Access Denied: You do not have permission to view system status.", result.getErrorMessage());
+    }
+
+    @Test
+    void getSystemStatusList_whenResponseBodyIsNull_returnsBackendStatusError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.hasError());
+        assertTrue(result.getErrorMessage().contains("200"));
+    }
+
+    @Test
+    void getSystemStatusList_whenResponseIsPrimitive_returnsUnexpectedFormatError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode primitiveNode = mapper.getNodeFactory().textNode("just-a-string");
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(primitiveNode, HttpStatus.OK));
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertTrue(result.hasError());
+        assertEquals("Unexpected API response format", result.getErrorMessage());
+    }
+
+    @Test
+    void getSystemStatusList_whenCalledWithNoAccessToken_stillCallsApi() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node = mapper.createArrayNode();
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(node, HttpStatus.OK));
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList();
+
+        assertFalse(result.hasError());
+        assertTrue(result.getData().isEmpty());
+    }
+
+    @Test
+    void deleteSystemStatus_whenNotConfigured_returnsError() {
+        statusService = new StatusService(environment, restTemplate);
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", "tc1", "token");
+
+        assertTrue(result.hasError());
+        assertEquals("Status API not configured", result.getErrorMessage());
+    }
+
+    @Test
+    void deleteSystemStatus_whenTestCaseIsNa_treatsAsNoTestCase() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", "N/A", "token");
+
+        assertFalse(result.hasError());
+        assertEquals("System status record deleted successfully", result.getMessage());
+    }
+
+    @Test
+    void deleteSystemStatus_whenTestCaseIsBlank_treatsAsNoTestCase() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", "   ", "token");
+
+        assertFalse(result.hasError());
+    }
+
+    @Test
+    void deleteSystemStatus_whenBackendReturnsNon2xx_returnsError() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenReturn(new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", null, "token");
+
+        assertTrue(result.hasError());
+        assertTrue(result.getErrorMessage().contains("500"));
+    }
+
+    @Test
+    void deleteSystemStatus_whenBackendReturns2xxWithNullBody_usesDefaultMessage() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", null, "token");
+
+        assertFalse(result.hasError());
+        assertEquals("System status record deleted successfully", result.getMessage());
+    }
+
+    @Test
+    void deleteSystemStatus_whenRestTemplateThrows_returnsErrorWithExceptionMessage() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH + "?system_id={systemId}";
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.DELETE), any(), eq(JsonNode.class), eq("sys1")))
+            .thenThrow(new RuntimeException("connection refused"));
+
+        ServiceResponse<Void> result = statusService.deleteSystemStatus("sys1", null, "token");
+
+        assertTrue(result.hasError());
+        assertTrue(result.getErrorMessage().contains("connection refused"));
+    }
+
+    @Test
+    void normalizeBaseUrl_whenEnvUrlIsExactlyStatusApiPath_returnsRoot() {
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, "status.php");
+        statusService = new StatusService(environment, restTemplate);
+
+        assertTrue(statusService.isConfigured());
+    }
+
+    @Test
+    void getSystemStatusList_noArgOverload_delegatesWithNullToken() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode wrappedNode = mapper.createObjectNode()
+            .set("response_body", mapper.createArrayNode()
+                .add(mapper.createObjectNode().put("system_id", "sys1").put("status", "pass")));
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(wrappedNode, HttpStatus.OK));
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList();
+
+        assertFalse(result.hasError());
+        assertEquals(1, result.getData().size());
+        assertEquals("sys1", result.getData().get(0).getSystemId());
+    }
 }

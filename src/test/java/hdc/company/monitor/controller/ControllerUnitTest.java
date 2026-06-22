@@ -34,7 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import hdc.company.monitor.model.ServiceResponse;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 public class ControllerUnitTest {
 
@@ -247,5 +254,219 @@ public class ControllerUnitTest {
         assertNotNull(model.get("statusConfigMissing"));
         assertEquals(List.of(StatusService.STATUS_API_URL_ENV), model.get("statusConfigMissing"));
         assertNull(model.get("statusFetchError"));
+    }
+
+    @Test
+    void dashboard_setsOboTokenFailureMessage_whenPrincipalIsAuthenticationButTokenMissing() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getPhpApiScope()).thenReturn("api://expected-scope");
+        DashboardController controller = new DashboardController(
+            new StatusService(new MockEnvironment(), new RestTemplate()), oboService, authorizedClientRepository);
+
+        Authentication authentication = new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "tester"; }
+        };
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.dashboard(authentication, new MockHttpServletRequest(), model);
+
+        assertEquals("dashboard", view);
+        assertNotNull(model.get("statusFetchError"));
+        assertTrue(((String) model.get("statusFetchError")).contains("Failed to obtain OBO token"));
+        assertTrue(((String) model.get("statusFetchError")).contains("api://expected-scope"));
+    }
+
+    @Test
+    void dashboard_setsStatusFetchErrorFromResponse_whenTokenPresentButStatusCallFails() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.getSystemStatusList("obo-token"))
+            .thenReturn(ServiceResponse.error("upstream is down"));
+
+        DashboardController controller = new DashboardController(statusService, oboService, authorizedClientRepository);
+
+        Authentication authentication = new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "tester"; }
+        };
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        controller.dashboard(authentication, new MockHttpServletRequest(), model);
+
+        assertEquals("upstream is down", model.get("statusFetchError"));
+    }
+
+    @Test
+    void deleteStatus_setsSuccessMessage_whenServiceSucceeds() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.deleteSystemStatus("sys1", "tc1", "obo-token"))
+            .thenReturn(ServiceResponse.successMessage("deleted ok"));
+
+        DashboardController controller = new DashboardController(statusService, oboService, authorizedClientRepository);
+        RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Authentication authentication = new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "tester"; }
+        };
+
+        String view = controller.deleteStatus("sys1", "tc1", authentication, new MockHttpServletRequest(), redirectAttributes);
+
+        assertEquals("redirect:/dashboard", view);
+        assertEquals("deleted ok", redirectAttributes.getFlashAttributes().get("successMessage"));
+        assertNull(redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    @Test
+    void deleteStatus_setsErrorMessage_whenServiceReturnsError() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.deleteSystemStatus("sys1", null, "obo-token"))
+            .thenReturn(ServiceResponse.error("forbidden"));
+
+        DashboardController controller = new DashboardController(statusService, oboService, authorizedClientRepository);
+        RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Authentication authentication = new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "tester"; }
+        };
+
+        String view = controller.deleteStatus("sys1", null, authentication, new MockHttpServletRequest(), redirectAttributes);
+
+        assertEquals("redirect:/dashboard", view);
+        assertEquals("forbidden", redirectAttributes.getFlashAttributes().get("errorMessage"));
+        assertNull(redirectAttributes.getFlashAttributes().get("successMessage"));
+    }
+
+    @Test
+    void manage_setsProductFetchErrorWithOboMessage_whenInitialTokenPresentButOboFails() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getPhpApiScope()).thenReturn("api://scope-x");
+
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial-token", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any()))
+            .thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial-token")).thenReturn(null);
+
+        StatusService statusService = new StatusService(new MockEnvironment(), new RestTemplate());
+        ManageController controller = new ManageController(statusService, oboService, authorizedClientRepository);
+
+        Authentication authentication = new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "manager"; }
+        };
+
+        ExtendedModelMap model = new ExtendedModelMap();
+        String view = controller.manage(authentication, new MockHttpServletRequest(), model);
+
+        assertEquals("manage", view);
+        assertNotNull(model.get("productFetchError"));
+        assertTrue(((String) model.get("productFetchError")).contains("Failed to obtain OBO token"));
+        assertTrue(((String) model.get("productFetchError")).contains("api://scope-x"));
+    }
+
+    @Test
+    void manage_createSetsErrorMessage_whenServiceReturnsError() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.createProduct(any(), eq("obo-token")))
+            .thenReturn(ServiceResponse.error("cannot create"));
+
+        ManageController controller = new ManageController(statusService, oboService, authorizedClientRepository);
+        RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Authentication authentication = mockAuth();
+        String view = controller.createProduct("p", "d", "t", authentication, new MockHttpServletRequest(), redirectAttributes);
+
+        assertEquals("redirect:/manage", view);
+        assertEquals("cannot create", redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    @Test
+    void manage_updateSetsSuccessMessage_whenServiceSucceeds() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.updateProduct("p1", "newDesc", "tc", "obo-token"))
+            .thenReturn(ServiceResponse.successMessage("updated"));
+
+        ManageController controller = new ManageController(statusService, oboService, authorizedClientRepository);
+        RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.updateProduct("p1", "newDesc", "tc", mockAuth(), new MockHttpServletRequest(), redirectAttributes);
+
+        assertEquals("redirect:/manage", view);
+        assertEquals("updated", redirectAttributes.getFlashAttributes().get("successMessage"));
+    }
+
+    @Test
+    void manage_deleteSetsErrorMessage_whenServiceReturnsError() {
+        OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
+        EntraIdOboService oboService = mock(EntraIdOboService.class);
+        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        StatusService statusService = mock(StatusService.class);
+        when(statusService.deleteProduct("p1", "obo-token"))
+            .thenReturn(ServiceResponse.error("denied"));
+
+        ManageController controller = new ManageController(statusService, oboService, authorizedClientRepository);
+        RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String view = controller.deleteProduct("p1", mockAuth(), new MockHttpServletRequest(), redirectAttributes);
+
+        assertEquals("redirect:/manage", view);
+        assertEquals("denied", redirectAttributes.getFlashAttributes().get("errorMessage"));
+    }
+
+    private static Authentication mockAuth() {
+        return new Authentication() {
+            @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+            @Override public Object getCredentials() { return null; }
+            @Override public Object getDetails() { return null; }
+            @Override public Object getPrincipal() { return new Object(); }
+            @Override public boolean isAuthenticated() { return true; }
+            @Override public void setAuthenticated(boolean isAuthenticated) {}
+            @Override public String getName() { return "tester"; }
+        };
     }
 }
