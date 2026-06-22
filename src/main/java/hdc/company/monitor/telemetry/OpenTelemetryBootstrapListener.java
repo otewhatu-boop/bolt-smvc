@@ -38,7 +38,8 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
     private static final String OTLP_METRICS_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT";
     private static final String OTLP_PROTOCOL_PROPERTY = "otel.exporter.otlp.protocol";
     private static final String OTLP_PROTOCOL_ENV = "OTEL_EXPORTER_OTLP_PROTOCOL";
-    private static final String SUMO_TOKEN_HEADER = "X-Sumo-Token";
+    private static final String SUMO_AUTHORIZATION_HEADER = "Authorization";
+    private static final String SUMO_AUTHORIZATION_VALUE_PREFIX = "x-sumo-token:";
     private static final String[] DIAGNOSTIC_ENVIRONMENT_VARIABLES = {
             "OTEL_SERVICE_NAME",
             "OTEL_RESOURCE_ATTRIBUTES",
@@ -90,7 +91,10 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
 
         String sumoToken = System.getenv(SUMO_TOKEN_ENV);
         if (isConfigured(sumoToken)) {
-            System.setProperty(OTLP_HEADERS_PROPERTY, SUMO_TOKEN_HEADER + "=" + sumoToken.trim());
+            System.setProperty(
+                    OTLP_HEADERS_PROPERTY,
+                    SUMO_AUTHORIZATION_HEADER + "=" + SUMO_AUTHORIZATION_VALUE_PREFIX + " " + sumoToken.trim()
+            );
         }
     }
 
@@ -113,24 +117,35 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
             return;
         }
 
-        setIfMissing(OTLP_LOGS_ENDPOINT_PROPERTY, OTLP_LOGS_ENDPOINT_ENV, configuredEndpoint.trim());
-        setIfMissing(OTLP_TRACES_ENDPOINT_PROPERTY, OTLP_TRACES_ENDPOINT_ENV, configuredEndpoint.trim());
-        setIfMissing(OTLP_METRICS_ENDPOINT_PROPERTY, OTLP_METRICS_ENDPOINT_ENV, configuredEndpoint.trim());
+        setIfMissing(OTLP_LOGS_ENDPOINT_PROPERTY, OTLP_LOGS_ENDPOINT_ENV, signalEndpoint(configuredEndpoint, "logs"));
+        setIfMissing(OTLP_TRACES_ENDPOINT_PROPERTY, OTLP_TRACES_ENDPOINT_ENV, signalEndpoint(configuredEndpoint, "traces"));
+        setIfMissing(OTLP_METRICS_ENDPOINT_PROPERTY, OTLP_METRICS_ENDPOINT_ENV, signalEndpoint(configuredEndpoint, "metrics"));
 
         String baseEndpoint = baseEndpoint(endpointUri);
         System.setProperty(OTLP_ENDPOINT_PROPERTY, baseEndpoint);
         logger.info(
-                "OTLP endpoint '{}' includes path '{}'. Using '{}' as the generic OTLP endpoint and '{}' as signal-specific endpoints where not already configured.",
+                "OTLP endpoint '{}' includes path '{}'. Using '{}' as the generic OTLP endpoint and signal-specific /v1/* endpoints where not already configured.",
                 configuredEndpoint,
                 path,
-                baseEndpoint,
-                configuredEndpoint.trim()
+                baseEndpoint
         );
 
         if (!isConfigured(System.getProperty(OTLP_PROTOCOL_PROPERTY)) && !isConfigured(System.getenv(OTLP_PROTOCOL_ENV))) {
             System.setProperty(OTLP_PROTOCOL_PROPERTY, "http/protobuf");
             logger.info("OTLP endpoint has a collector path; defaulting {} to http/protobuf.", OTLP_PROTOCOL_PROPERTY);
         }
+    }
+
+    private static String signalEndpoint(String endpoint, String signal) {
+        String trimmedEndpoint = endpoint.trim();
+        String suffix = "/v1/" + signal;
+        if (trimmedEndpoint.endsWith(suffix)) {
+            return trimmedEndpoint;
+        }
+        if (trimmedEndpoint.endsWith("/")) {
+            return trimmedEndpoint.substring(0, trimmedEndpoint.length() - 1) + suffix;
+        }
+        return trimmedEndpoint + suffix;
     }
 
     private static String baseEndpoint(URI endpointUri) {
@@ -213,8 +228,9 @@ public class OpenTelemetryBootstrapListener implements ServletContextListener {
 
     private static String maskHeaderValue(String value) {
         String trimmed = value.trim();
-        if (trimmed.contains(SUMO_TOKEN_HEADER + "=")) {
-            return SUMO_TOKEN_HEADER + "=" + sha256Mask(trimmed.substring(trimmed.indexOf('=') + 1));
+        if (trimmed.startsWith(SUMO_AUTHORIZATION_HEADER + "=") && trimmed.contains(SUMO_AUTHORIZATION_VALUE_PREFIX)) {
+            String token = trimmed.substring(trimmed.indexOf(SUMO_AUTHORIZATION_VALUE_PREFIX) + SUMO_AUTHORIZATION_VALUE_PREFIX.length());
+            return SUMO_AUTHORIZATION_HEADER + "=" + SUMO_AUTHORIZATION_VALUE_PREFIX + " " + sha256Mask(token);
         }
         return "<configured>";
     }
