@@ -287,7 +287,11 @@ public class ControllerUnitTest {
     void dashboard_setsStatusFetchErrorFromResponse_whenTokenPresentButStatusCallFails() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.getSystemStatusList("obo-token"))
             .thenReturn(ServiceResponse.error("upstream is down"));
@@ -314,7 +318,11 @@ public class ControllerUnitTest {
     void deleteStatus_setsSuccessMessage_whenServiceSucceeds() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.deleteSystemStatus("sys1", "tc1", "obo-token"))
             .thenReturn(ServiceResponse.successMessage("deleted ok"));
@@ -343,7 +351,11 @@ public class ControllerUnitTest {
     void deleteStatus_setsErrorMessage_whenServiceReturnsError() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.deleteSystemStatus("sys1", null, "obo-token"))
             .thenReturn(ServiceResponse.error("forbidden"));
@@ -407,7 +419,11 @@ public class ControllerUnitTest {
     void manage_createSetsErrorMessage_whenServiceReturnsError() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.createProduct(any(), eq("obo-token")))
             .thenReturn(ServiceResponse.error("cannot create"));
@@ -426,7 +442,11 @@ public class ControllerUnitTest {
     void manage_updateSetsSuccessMessage_whenServiceSucceeds() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.updateProduct("p1", "newDesc", "tc", "obo-token"))
             .thenReturn(ServiceResponse.successMessage("updated"));
@@ -444,7 +464,11 @@ public class ControllerUnitTest {
     void manage_deleteSetsErrorMessage_whenServiceReturnsError() {
         OAuth2AuthorizedClientRepository authorizedClientRepository = mock(OAuth2AuthorizedClientRepository.class);
         EntraIdOboService oboService = mock(EntraIdOboService.class);
-        when(oboService.getOboToken(anyString())).thenReturn("obo-token");
+        OAuth2AuthorizedClient authorizedClient = mock(OAuth2AuthorizedClient.class);
+        OAuth2AccessToken rawToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "initial", Instant.now(), Instant.now().plusSeconds(60));
+        when(authorizedClient.getAccessToken()).thenReturn(rawToken);
+        when(authorizedClientRepository.loadAuthorizedClient(eq("entra"), any(Authentication.class), any())).thenReturn(authorizedClient);
+        when(oboService.getOboToken("initial")).thenReturn("obo-token");
         StatusService statusService = mock(StatusService.class);
         when(statusService.deleteProduct("p1", "obo-token"))
             .thenReturn(ServiceResponse.error("denied"));
