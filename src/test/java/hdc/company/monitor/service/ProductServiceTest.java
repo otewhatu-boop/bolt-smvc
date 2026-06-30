@@ -126,7 +126,7 @@ class ProductServiceTest {
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
         statusService = new StatusService(environment, restTemplate);
 
-        ProductItem item = new ProductItem("newProd", "newDesc", "newTC");
+        ProductItem item = new ProductItem("newProd", "newDesc", "newTC", "GET");
         String expectedUrl = baseUrl + "/" + StatusService.PRODUCT_API_PATH;
 
         ObjectMapper mapper = new ObjectMapper();
@@ -155,7 +155,7 @@ class ProductServiceTest {
         when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.PUT), any(), eq(JsonNode.class), eq("prod1")))
             .thenReturn(new ResponseEntity<>(responseNode, HttpStatus.OK));
 
-        ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "newTC", "token");
+        ServiceResponse<Void> result = statusService.updateProduct("prod1", "newDesc", "newTC", "HEAD", "token");
 
         assertFalse(result.hasError());
         assertEquals("Product updated successfully", result.getMessage());

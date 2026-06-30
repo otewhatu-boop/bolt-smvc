@@ -49,7 +49,8 @@ public class ManageControllerTest {
                 .with(csrf())
                 .param("productName", "newProd")
                 .param("productDescription", "newDesc")
-                .param("testCase", "newTC"))
+                .param("testCase", "newTC")
+                .param("httpOp", "GET"))
                .andExpect(status().is3xxRedirection())
                .andExpect(redirectedUrl("/manage"));
     }
@@ -61,7 +62,8 @@ public class ManageControllerTest {
                 .with(csrf())
                 .param("productName", "prod1")
                 .param("productDescription", "updatedDesc")
-                .param("testCase", "updatedTC"))
+                .param("testCase", "updatedTC")
+                .param("httpOp", "HEAD"))
                .andExpect(status().is3xxRedirection())
                .andExpect(redirectedUrl("/manage"));
     }
