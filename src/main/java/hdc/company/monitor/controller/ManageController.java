@@ -76,9 +76,10 @@ public class ManageController {
     public String createProduct(@RequestParam("productName") String productName,
                                 @RequestParam("productDescription") String productDescription,
                                 @RequestParam(value = "testCase", required = false) String testCase,
+                                @RequestParam(value = "httpOp", required = false) String httpOp,
                                 Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         String apiAccessToken = getApiAccessToken(principal, request);
-        ProductItem newItem = new ProductItem(productName, productDescription, testCase);
+        ProductItem newItem = new ProductItem(productName, productDescription, testCase, httpOp);
         ServiceResponse<Void> response = statusService.createProduct(newItem, apiAccessToken);
         if (response.hasError()) {
             redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
@@ -92,9 +93,10 @@ public class ManageController {
     public String updateProduct(@RequestParam("productName") String productName,
                                 @RequestParam("productDescription") String productDescription,
                                 @RequestParam(value = "testCase", required = false) String testCase,
+                                @RequestParam(value = "httpOp", required = false) String httpOp,
                                 Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         String apiAccessToken = getApiAccessToken(principal, request);
-        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, testCase, apiAccessToken);
+        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, testCase, httpOp, apiAccessToken);
         if (response.hasError()) {
             redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
         } else {

@@ -159,7 +159,7 @@
             font-weight: 600;
         }
 
-        .form-group input, .form-group textarea {
+        .form-group input, .form-group textarea, .form-group select {
             width: 100%;
             padding: 0.5rem;
             border: 1px solid #ccc;
@@ -292,6 +292,7 @@
                             <th>Product Name</th>
                             <th>Description</th>
                             <th>Test Case</th>
+                            <th>HTTP Op</th>
                             <th class="action-column">Actions</th>
                         </tr>
                     </thead>
@@ -300,11 +301,13 @@
                             <td th:text="${product.productName}">Product Name</td>
                             <td th:text="${product.productDescription}">Description</td>
                             <td th:text="${product.testCase}">Test Case</td>
+                            <td th:text="${product.httpOp != null and !#strings.isEmpty(product.httpOp) ? product.httpOp : 'GET'}">HTTP Op</td>
                             <td>
                                 <button class="btn btn-primary"
                                         th:data-name="${product.productName}"
                                         th:data-description="${product.productDescription}"
                                         th:data-testcase="${product.testCase}"
+                                        th:data-httpop="${product.httpOp}"
                                         onclick="openEditModalFromData(this)">Edit</button>
                                 <button class="btn btn-danger"
                                         th:data-name="${product.productName}"
@@ -342,6 +345,13 @@
                     <label for="createTestCase">Test Case / URL:</label>
                     <input type="text" id="createTestCase" name="testCase">
                 </div>
+                <div class="form-group">
+                    <label for="createHttpOp">HTTP Op:</label>
+                    <select id="createHttpOp" name="httpOp">
+                        <option value="GET" selected>GET</option>
+                        <option value="HEAD">HEAD</option>
+                    </select>
+                </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn" onclick="closeModal('createModal')">Cancel</button>
                     <button type="submit" class="btn btn-success">Create</button>
@@ -370,6 +380,13 @@
                 <div class="form-group">
                     <label for="editTestCase">Test Case / URL:</label>
                     <input type="text" id="editTestCase" name="testCase">
+                </div>
+                <div class="form-group">
+                    <label for="editHttpOp">HTTP Op:</label>
+                    <select id="editHttpOp" name="httpOp">
+                        <option value="GET">GET</option>
+                        <option value="HEAD">HEAD</option>
+                    </select>
                 </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn" onclick="closeModal('editModal')">Cancel</button>
@@ -406,7 +423,8 @@
             const name = button.getAttribute('data-name');
             const description = button.getAttribute('data-description');
             const testCase = button.getAttribute('data-testcase');
-            openEditModal(name, description, testCase);
+            const httpOp = button.getAttribute('data-httpop');
+            openEditModal(name, description, testCase, httpOp);
         }
 
         function openDeleteModalFromData(button) {
@@ -414,11 +432,12 @@
             openDeleteModal(name);
         }
 
-        function openEditModal(name, description, testCase) {
+        function openEditModal(name, description, testCase, httpOp) {
             document.getElementById('editProductName').value = name;
             document.getElementById('editProductNameDisplay').innerText = name;
             document.getElementById('editProductDescription').value = description;
             document.getElementById('editTestCase').value = testCase || '';
+            document.getElementById('editHttpOp').value = (httpOp && httpOp.trim()) ? httpOp : 'GET';
             document.getElementById('editModal').style.display = 'block';
         }
 
