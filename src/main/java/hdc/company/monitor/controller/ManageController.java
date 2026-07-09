@@ -77,9 +77,10 @@ public class ManageController {
                                 @RequestParam("productDescription") String productDescription,
                                 @RequestParam(value = "testCase", required = false) String testCase,
                                 @RequestParam(value = "httpOp", required = false) String httpOp,
+                                @RequestParam(value = "stringTest", required = false) String stringTest,
                                 Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         String apiAccessToken = getApiAccessToken(principal, request);
-        ProductItem newItem = new ProductItem(productName, productDescription, testCase, httpOp);
+        ProductItem newItem = new ProductItem(productName, productDescription, testCase, httpOp, stringTest);
         ServiceResponse<Void> response = statusService.createProduct(newItem, apiAccessToken);
         if (response.hasError()) {
             redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
@@ -94,9 +95,10 @@ public class ManageController {
                                 @RequestParam("productDescription") String productDescription,
                                 @RequestParam(value = "testCase", required = false) String testCase,
                                 @RequestParam(value = "httpOp", required = false) String httpOp,
+                                @RequestParam(value = "stringTest", required = false) String stringTest,
                                 Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         String apiAccessToken = getApiAccessToken(principal, request);
-        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, testCase, httpOp, apiAccessToken);
+        ServiceResponse<Void> response = statusService.updateProduct(productName, productDescription, testCase, httpOp, stringTest, apiAccessToken);
         if (response.hasError()) {
             redirectAttributes.addFlashAttribute("errorMessage", response.getErrorMessage());
         } else {

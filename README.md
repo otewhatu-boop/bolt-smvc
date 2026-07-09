@@ -1,12 +1,42 @@
 # Monitor Centre Application
 
-A Spring MVC web application for monitoring and management, built with Java 17 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
+A Spring MVC web application for monitoring and management, built with Java 21 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
 
 Dev Agents
 
 - [![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new) Google `otewhatu-boop`
 - [<img src="https://dl.svgcdn.com/png/simple-icons/googlejules-800.png" alt="Google Jules Icon" width="24" height="24" style="vertical-align:middle">](https://jules.google.com) Google `otewhatu@gmail.com`
 - [<img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg" alt="ChatGPT Codex Logo" width="24" height="24" style="vertical-align:middle">](https://chatgpt.com/codex/cloud/) Google `otewhatu-boop`
+
+## Architecture and Internal Components
+
+The diagram below outlines the internal components of the Monitor Centre application and the request flow when accessing pages that interact with the PHP API backend (such as `/manage` or `/dashboard`).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant Browser as Browser (Thymeleaf UI)
+    participant Ctrl as MVC Controller<br/>(Dashboard/Manage)
+    participant Obo as EntraIdOboService
+    participant Svc as StatusService
+    participant API as PHP API (Backend)
+
+    User->>Browser: Requests page (e.g., /manage)
+    Browser->>Ctrl: GET /manage
+    Note over Ctrl: Retrieve initial access token<br/>from OAuth2 client context
+    Ctrl->>Obo: getOboToken(initialAccessToken)
+    Note over Obo: Requests OBO token for PHP API<br/>scope from Microsoft Entra ID
+    Obo-->>Ctrl: Returns API Access Token (OBO JWT)
+    Ctrl->>Svc: getProductList(apiAccessToken)
+    Note over Svc: Sets OBO Bearer Token and<br/>Correlation ID on RestTemplate
+    Svc->>API: GET /product (with headers)
+    API-->>Svc: Returns JSON Product Data
+    Svc-->>Ctrl: Returns ServiceResponse<ProductItem>
+    Note over Ctrl: Populates Model and renders view
+    Ctrl-->>Browser: Returns HTML (manage.html)
+    Browser-->>User: Displays product master manage screen
+```
 
 ## Prerequisites
 

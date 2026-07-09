@@ -50,7 +50,8 @@ public class ManageControllerTest {
                 .param("productName", "newProd")
                 .param("productDescription", "newDesc")
                 .param("testCase", "newTC")
-                .param("httpOp", "GET"))
+                .param("httpOp", "GET")
+                .param("stringTest", "myExpectedString"))
                .andExpect(status().is3xxRedirection())
                .andExpect(redirectedUrl("/manage"));
     }
@@ -63,7 +64,8 @@ public class ManageControllerTest {
                 .param("productName", "prod1")
                 .param("productDescription", "updatedDesc")
                 .param("testCase", "updatedTC")
-                .param("httpOp", "HEAD"))
+                .param("httpOp", "HEAD")
+                .param("stringTest", "myExpectedString"))
                .andExpect(status().is3xxRedirection())
                .andExpect(redirectedUrl("/manage"));
     }

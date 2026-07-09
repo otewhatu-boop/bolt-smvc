@@ -184,6 +184,8 @@
                             <th>Product Name</th>
                             <th>Description</th>
                             <th>Test Case</th>
+                            <th>HTTP Op</th>
+                            <th>String Test</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -191,6 +193,8 @@
                             <td th:text="${product.productName}">Product Name</td>
                             <td th:text="${product.productDescription}">Description</td>
                             <td th:text="${product.testCase}">Test Case</td>
+                            <td th:text="${product.httpOp != null and !#strings.isEmpty(product.httpOp) ? product.httpOp : 'GET'}">HTTP Op</td>
+                            <td th:text="${product.stringTest}">String Test</td>
                         </tr>
                     </tbody>
                 </table>

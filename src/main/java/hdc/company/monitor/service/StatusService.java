@@ -166,7 +166,7 @@ public class StatusService {
         }
     }
 
-    public ServiceResponse<Void> updateProduct(String productName, String productDescription, String testCase, String httpOp, String accessToken) {
+    public ServiceResponse<Void> updateProduct(String productName, String productDescription, String testCase, String httpOp, String stringTest, String accessToken) {
         if (productApiUrl == null) return ServiceResponse.error("Product API not configured");
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -181,6 +181,9 @@ public class StatusService {
             }
             if (httpOp != null) {
                 body.put("http_op", httpOp);
+            }
+            if (stringTest != null) {
+                body.put("string_test", stringTest);
             }
             HttpEntity<java.util.Map<String, String>> entity = new HttpEntity<>(body, headers);
             String urlTemplate = productApiUrl + "?product_name={productName}";
