@@ -237,12 +237,3 @@ mvn clean
 2. Write unit tests for new functionality
 3. Update documentation as needed
 4. Test locally before committing
-
-## Technology Stack
-
-- **Java 17**
-- **Spring MVC 6.0.13**
-- **Thymeleaf 3.1.2**
-- **Maven 3.x**
-- **JUnit 5** (for testing)
-- **Jakarta Servlet API 6.0**
