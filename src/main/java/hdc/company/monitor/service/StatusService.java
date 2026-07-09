@@ -287,7 +287,20 @@ public class StatusService {
                 if (itemsNode.isArray()) {
                     SystemStatusItem[] items = objectMapper.treeToValue(itemsNode, SystemStatusItem[].class);
                     logger.info("Backend system status API returned {} items", items.length);
-                    return ServiceResponse.success(List.of(items));
+                    List<SystemStatusItem> itemList = new ArrayList<>(java.util.Arrays.asList(items));
+                    itemList.sort((a, b) -> {
+                        String idA = a.getSystemId();
+                        String idB = b.getSystemId();
+                        if (idA == null && idB == null) return 0;
+                        if (idA == null) return 1;
+                        if (idB == null) return -1;
+                        int res = idA.compareToIgnoreCase(idB);
+                        if (res == 0) {
+                            res = idA.compareTo(idB);
+                        }
+                        return res;
+                    });
+                    return ServiceResponse.success(itemList);
                 } else {
                     logger.warn("Backend system status API returned success but body/response_body is not an array");
                     return ServiceResponse.error("Unexpected API response format");
