@@ -10,32 +10,46 @@ Dev Agents
 
 ## Architecture and Internal Components
 
-The diagram below outlines the internal components of the Monitor Centre application and the request flow when accessing pages that interact with the PHP API backend (such as `/manage` or `/dashboard`).
+The diagram below outlines the internal components of the Monitor Centre application and its adjacent systems as a detailed whitebox sequence diagram, showing how classes and methods interact when accessing the `/manage` page.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User
-    participant Browser as Browser (Thymeleaf UI)
-    participant Ctrl as MVC Controller<br/>(Dashboard/Manage)
+    actor User as User Browser
+    participant Filter as CorrelationFilter
+    participant Ctrl as ManageController
+    participant OAuthRepo as OAuth2AuthorizedClientRepository
     participant Obo as EntraIdOboService
     participant Svc as StatusService
-    participant API as PHP API (Backend)
+    participant Interceptor as CorrelationInterceptor
+    participant EntraID as Microsoft Entra ID
+    participant API as PHP API (/product)
 
-    User->>Browser: Requests page (e.g., /manage)
-    Browser->>Ctrl: GET /manage
-    Note over Ctrl: Retrieve initial access token<br/>from OAuth2 client context
+    User->>Filter: HTTP GET /manage
+    Note over Filter: CorrelationFilter.doFilter()<br/>Extracts/Generates X-Correlation-ID<br/>and puts it in MDC
+    Filter->>Ctrl: manage(Principal, HttpServletRequest, Model)
+
+    Ctrl->>OAuthRepo: loadAuthorizedClient("entra", authentication, request)
+    OAuthRepo-->>Ctrl: returns OAuth2AuthorizedClient (initialAccessToken)
+
     Ctrl->>Obo: getOboToken(initialAccessToken)
-    Note over Obo: Requests OBO token for PHP API<br/>scope from Microsoft Entra ID
-    Obo-->>Ctrl: Returns API Access Token (OBO JWT)
+    Note over Obo: Builds OBO token request body<br/>with grant_type=jwt-bearer<br/>and PHP_API_SCOPE
+    Obo->>EntraID: POST /oauth2/v2.0/token (client credentials + user assertion)
+    EntraID-->>Obo: returns access_token (OBO JWT)
+    Obo-->>Ctrl: returns apiAccessToken (String)
+
     Ctrl->>Svc: getProductList(apiAccessToken)
-    Note over Svc: Sets OBO Bearer Token and<br/>Correlation ID on RestTemplate
-    Svc->>API: GET /product (with headers)
-    API-->>Svc: Returns JSON Product Data
-    Svc-->>Ctrl: Returns ServiceResponse<ProductItem>
-    Note over Ctrl: Populates Model and renders view
-    Ctrl-->>Browser: Returns HTML (manage.html)
-    Browser-->>User: Displays product master manage screen
+    Note over Svc: Prepares HttpHeaders<br/>with bearer auth using apiAccessToken
+    Svc->>Interceptor: restTemplate.exchange(productApiUrl, GET, entity, JsonNode.class)
+    Note over Interceptor: intercept(HttpRequest, body, execution)<br/>Retrieves correlation ID from MDC<br/>and appends 'X-Correlation-ID' header
+    Interceptor->>API: HTTP GET /product (with Authorization and X-Correlation-ID)
+    API-->>Interceptor: HTTP 200 OK (JSON response)
+    Interceptor-->>Svc: returns ResponseEntity<JsonNode>
+    Note over Svc: Parses array/wrapped/map format<br/>and deserializes to ProductItem list
+    Svc-->>Ctrl: returns ServiceResponse<ProductItem>
+
+    Note over Ctrl: Populates Thymeleaf Model<br/>with productList and version
+    Ctrl-->>User: Renders & returns manage.html
 ```
 
 ## Prerequisites
