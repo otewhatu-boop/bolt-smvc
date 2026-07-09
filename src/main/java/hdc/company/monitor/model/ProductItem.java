@@ -16,6 +16,9 @@ public class ProductItem {
     @JsonProperty("http_op")
     private String httpOp;
 
+    @JsonProperty("string_test")
+    private String stringTest;
+
     public ProductItem() {
     }
 
@@ -24,6 +27,14 @@ public class ProductItem {
         this.productDescription = productDescription;
         this.testCase = testCase;
         this.httpOp = httpOp;
+    }
+
+    public ProductItem(String productName, String productDescription, String testCase, String httpOp, String stringTest) {
+        this.productName = productName;
+        this.productDescription = productDescription;
+        this.testCase = testCase;
+        this.httpOp = httpOp;
+        this.stringTest = stringTest;
     }
 
     public String getProductName() {
@@ -56,5 +67,13 @@ public class ProductItem {
 
     public void setHttpOp(String httpOp) {
         this.httpOp = httpOp;
+    }
+
+    public String getStringTest() {
+        return stringTest;
+    }
+
+    public void setStringTest(String stringTest) {
+        this.stringTest = stringTest;
     }
 }

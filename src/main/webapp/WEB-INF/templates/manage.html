@@ -293,6 +293,7 @@
                             <th>Description</th>
                             <th>Test Case</th>
                             <th>HTTP Op</th>
+                            <th>String Test</th>
                             <th class="action-column">Actions</th>
                         </tr>
                     </thead>
@@ -302,12 +303,14 @@
                             <td th:text="${product.productDescription}">Description</td>
                             <td th:text="${product.testCase}">Test Case</td>
                             <td th:text="${product.httpOp != null and !#strings.isEmpty(product.httpOp) ? product.httpOp : 'GET'}">HTTP Op</td>
+                            <td th:text="${product.stringTest}">String Test</td>
                             <td>
                                 <button class="btn btn-primary"
                                         th:data-name="${product.productName}"
                                         th:data-description="${product.productDescription}"
                                         th:data-testcase="${product.testCase}"
                                         th:data-httpop="${product.httpOp}"
+                                        th:data-stringtest="${product.stringTest}"
                                         onclick="openEditModalFromData(this)">Edit</button>
                                 <button class="btn btn-danger"
                                         th:data-name="${product.productName}"
@@ -352,6 +355,10 @@
                         <option value="HEAD">HEAD</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="createStringTest">String Test:</label>
+                    <input type="text" id="createStringTest" name="stringTest">
+                </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn" onclick="closeModal('createModal')">Cancel</button>
                     <button type="submit" class="btn btn-success">Create</button>
@@ -387,6 +394,10 @@
                         <option value="GET">GET</option>
                         <option value="HEAD">HEAD</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="editStringTest">String Test:</label>
+                    <input type="text" id="editStringTest" name="stringTest">
                 </div>
                 <div style="text-align: right;">
                     <button type="button" class="btn" onclick="closeModal('editModal')">Cancel</button>
@@ -424,7 +435,8 @@
             const description = button.getAttribute('data-description');
             const testCase = button.getAttribute('data-testcase');
             const httpOp = button.getAttribute('data-httpop');
-            openEditModal(name, description, testCase, httpOp);
+            const stringTest = button.getAttribute('data-stringtest');
+            openEditModal(name, description, testCase, httpOp, stringTest);
         }
 
         function openDeleteModalFromData(button) {
@@ -432,12 +444,13 @@
             openDeleteModal(name);
         }
 
-        function openEditModal(name, description, testCase, httpOp) {
+        function openEditModal(name, description, testCase, httpOp, stringTest) {
             document.getElementById('editProductName').value = name;
             document.getElementById('editProductNameDisplay').innerText = name;
             document.getElementById('editProductDescription').value = description;
             document.getElementById('editTestCase').value = testCase || '';
             document.getElementById('editHttpOp').value = (httpOp && httpOp.trim()) ? httpOp : 'GET';
+            document.getElementById('editStringTest').value = stringTest || '';
             document.getElementById('editModal').style.display = 'block';
         }
 

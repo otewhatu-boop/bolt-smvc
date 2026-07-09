@@ -1,12 +1,56 @@
 # Monitor Centre Application
 
-A Spring MVC web application for monitoring and management, built with Java 17 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
+A Spring MVC web application for monitoring and management, built with Java 21 and deployed as a WAR file. For CI/CD see [Environments](https://v8lust.atlassian.net/wiki/spaces/HDC/pages/933685/SMVC+Monitor+Centre#Environments) in Confluence.
 
 Dev Agents
 
 - [![Open in Bolt](https://bolt.new/static/open-in-bolt.svg)](https://bolt.new) Google `otewhatu-boop`
 - [<img src="https://dl.svgcdn.com/png/simple-icons/googlejules-800.png" alt="Google Jules Icon" width="24" height="24" style="vertical-align:middle">](https://jules.google.com) Google `otewhatu@gmail.com`
 - [<img src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg" alt="ChatGPT Codex Logo" width="24" height="24" style="vertical-align:middle">](https://chatgpt.com/codex/cloud/) Google `otewhatu-boop`
+
+## Architecture and Internal Components
+
+The diagram below outlines the internal components of the Monitor Centre application and its adjacent systems as a detailed whitebox sequence diagram, showing how classes and methods interact when accessing the `/manage` page.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User Browser
+    participant Filter as CorrelationFilter
+    participant Ctrl as ManageController
+    participant OAuthRepo as OAuth2AuthorizedClientRepository
+    participant Obo as EntraIdOboService
+    participant Svc as StatusService
+    participant Interceptor as CorrelationInterceptor
+    participant EntraID as Microsoft Entra ID
+    participant API as PHP API (/product)
+
+    User->>Filter: HTTP GET /manage
+    Note over Filter: CorrelationFilter.doFilter()<br/>Extracts/Generates X-Correlation-ID<br/>and puts it in MDC
+    Filter->>Ctrl: manage(Principal, HttpServletRequest, Model)
+
+    Ctrl->>OAuthRepo: loadAuthorizedClient("entra", authentication, request)
+    OAuthRepo-->>Ctrl: returns OAuth2AuthorizedClient (initialAccessToken)
+
+    Ctrl->>Obo: getOboToken(initialAccessToken)
+    Note over Obo: Builds OBO token request body<br/>with grant_type=jwt-bearer<br/>and PHP_API_SCOPE
+    Obo->>EntraID: POST /oauth2/v2.0/token (client credentials + user assertion)
+    EntraID-->>Obo: returns access_token (OBO JWT)
+    Obo-->>Ctrl: returns apiAccessToken (String)
+
+    Ctrl->>Svc: getProductList(apiAccessToken)
+    Note over Svc: Prepares HttpHeaders<br/>with bearer auth using apiAccessToken
+    Svc->>Interceptor: restTemplate.exchange(productApiUrl, GET, entity, JsonNode.class)
+    Note over Interceptor: intercept(HttpRequest, body, execution)<br/>Retrieves correlation ID from MDC<br/>and appends 'X-Correlation-ID' header
+    Interceptor->>API: HTTP GET /product (with Authorization and X-Correlation-ID)
+    API-->>Interceptor: HTTP 200 OK (JSON response)
+    Interceptor-->>Svc: returns ResponseEntity<JsonNode>
+    Note over Svc: Parses array/wrapped/map format<br/>and deserializes to ProductItem list
+    Svc-->>Ctrl: returns ServiceResponse<ProductItem>
+
+    Note over Ctrl: Populates Thymeleaf Model<br/>with productList and version
+    Ctrl-->>User: Renders & returns manage.html
+```
 
 ## Prerequisites
 
