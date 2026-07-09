@@ -88,6 +88,33 @@ class StatusServiceTest {
 
 
     @Test
+    void getSystemStatusList_isSortedAlphabeticallyBySystemId() {
+        String baseUrl = "http://localhost/api";
+        environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
+        statusService = new StatusService(environment, restTemplate);
+
+        String expectedUrl = baseUrl + "/" + StatusService.STATUS_API_PATH;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode itemsNode = mapper.createArrayNode()
+            .add(mapper.createObjectNode().put("system_id", "sys3").put("status", "UP").put("updated_at", "2023-01-01T00:00:00Z"))
+            .add(mapper.createObjectNode().put("system_id", "sys1").put("status", "UP").put("updated_at", "2023-01-01T00:00:00Z"))
+            .add(mapper.createObjectNode().put("system_id", "sys2").put("status", "DOWN").put("updated_at", "2023-01-01T00:00:01Z"))
+            .add(mapper.createObjectNode().put("system_id", "Sys0").put("status", "UP").put("updated_at", "2023-01-01T00:00:00Z"));
+
+        when(restTemplate.exchange(eq(expectedUrl), eq(HttpMethod.GET), any(), eq(JsonNode.class)))
+            .thenReturn(new ResponseEntity<>(itemsNode, HttpStatus.OK));
+
+        ServiceResponse<SystemStatusItem> result = statusService.getSystemStatusList("test-token");
+
+        assertEquals(4, result.getData().size());
+        assertEquals("Sys0", result.getData().get(0).getSystemId());
+        assertEquals("sys1", result.getData().get(1).getSystemId());
+        assertEquals("sys2", result.getData().get(2).getSystemId());
+        assertEquals("sys3", result.getData().get(3).getSystemId());
+        assertFalse(result.hasError());
+    }
+
+    @Test
     void getSystemStatusList_whenSuccessful_returnsList() {
         String baseUrl = "http://localhost/api";
         environment.setProperty(StatusService.STATUS_API_URL_ENV, baseUrl);
