@@ -10,46 +10,87 @@ Dev Agents
 
 ## Architecture and Internal Components
 
-The diagram below outlines the internal components of the Monitor Centre application and its adjacent systems as a detailed whitebox sequence diagram, showing how classes and methods interact when accessing the `/manage` page.
+The diagram below outlines the internal components of the Monitor Centre application and its adjacent systems as a whitebox class diagram, showing the key classes, their responsibilities, and how they collaborate to serve the `/manage` page.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User Browser
-    participant Filter as CorrelationFilter
-    participant Ctrl as ManageController
-    participant OAuthRepo as OAuth2AuthorizedClientRepository
-    participant Obo as EntraIdOboService
-    participant Svc as StatusService
-    participant Interceptor as CorrelationInterceptor
-    participant EntraID as Microsoft Entra ID
-    participant API as PHP API (/product)
+classDiagram
+    direction TB
 
-    User->>Filter: HTTP GET /manage
-    Note over Filter: CorrelationFilter.doFilter()<br/>Extracts/Generates X-Correlation-ID<br/>and puts it in MDC
-    Filter->>Ctrl: manage(Principal, HttpServletRequest, Model)
+    class CorrelationFilter {
+        +doFilter(ServletRequest, ServletResponse, FilterChain)
+    }
 
-    Ctrl->>OAuthRepo: loadAuthorizedClient("entra", authentication, request)
-    OAuthRepo-->>Ctrl: returns OAuth2AuthorizedClient (initialAccessToken)
+    class ManageController {
+        -StatusService statusService
+        -EntraIdOboService oboService
+        -OAuth2AuthorizedClientRepository authorizedClientRepository
+        +manage(Principal, HttpServletRequest, Model) String
+        +createProduct(...) String
+        +updateProduct(...) String
+        +deleteProduct(...) String
+        -getApiAccessToken(Principal, HttpServletRequest) String
+    }
 
-    Ctrl->>Obo: getOboToken(initialAccessToken)
-    Note over Obo: Builds OBO token request body<br/>with grant_type=jwt-bearer<br/>and PHP_API_SCOPE
-    Obo->>EntraID: POST /oauth2/v2.0/token (client credentials + user assertion)
-    EntraID-->>Obo: returns access_token (OBO JWT)
-    Obo-->>Ctrl: returns apiAccessToken (String)
+    class OAuth2AuthorizedClientRepository {
+        <<interface>>
+        +loadAuthorizedClient(String, Authentication, HttpServletRequest) OAuth2AuthorizedClient
+    }
 
-    Ctrl->>Svc: getProductList(apiAccessToken)
-    Note over Svc: Prepares HttpHeaders<br/>with bearer auth using apiAccessToken
-    Svc->>Interceptor: restTemplate.exchange(productApiUrl, GET, entity, JsonNode.class)
-    Note over Interceptor: intercept(HttpRequest, body, execution)<br/>Retrieves correlation ID from MDC<br/>and appends 'X-Correlation-ID' header
-    Interceptor->>API: HTTP GET /product (with Authorization and X-Correlation-ID)
-    API-->>Interceptor: HTTP 200 OK (JSON response)
-    Interceptor-->>Svc: returns ResponseEntity<JsonNode>
-    Note over Svc: Parses array/wrapped/map format<br/>and deserializes to ProductItem list
-    Svc-->>Ctrl: returns ServiceResponse<ProductItem>
+    class EntraIdOboService {
+        -EntraIdProperties properties
+        -RestTemplate restTemplate
+        +getOboToken(String) String
+        +getPhpApiScope() String
+    }
 
-    Note over Ctrl: Populates Thymeleaf Model<br/>with productList and version
-    Ctrl-->>User: Renders & returns manage.html
+    class StatusService {
+        -RestTemplate restTemplate
+        -String productApiUrl
+        -String statusApiUrl
+        +getProductList(String) ServiceResponse~ProductItem~
+        +createProduct(ProductItem, String) ServiceResponse~Void~
+        +updateProduct(...) ServiceResponse~Void~
+        +deleteProduct(String, String) ServiceResponse~Void~
+        +getSystemStatusList(String) ServiceResponse~SystemStatusItem~
+    }
+
+    class CorrelationInterceptor {
+        +intercept(HttpRequest, byte[], ClientHttpRequestExecution) ClientHttpResponse
+    }
+
+    class ProductItem {
+        -String productName
+        -String productDescription
+        -String testCase
+        -String httpOp
+        -String stringTest
+    }
+
+    class ServiceResponse~T~ {
+        -List~T~ data
+        -String errorMessage
+        -String message
+        +getData() List~T~
+        +getErrorMessage() String
+        +hasError() boolean
+    }
+
+    class EntraIdProperties {
+        -String clientId
+        -String clientSecret
+        -String tenantId
+        -String phpApiScope
+        +isConfigured() boolean
+    }
+
+    CorrelationFilter ..> CorrelationInterceptor : shares X-Correlation-ID via MDC
+    ManageController --> StatusService : delegates product CRUD
+    ManageController --> EntraIdOboService : exchanges OBO token
+    ManageController --> OAuth2AuthorizedClientRepository : loads authorized client
+    EntraIdOboService --> EntraIdProperties : reads EntraID config
+    StatusService ..> ProductItem : deserializes
+    StatusService ..> ServiceResponse : wraps results
+    ManageController ..> ProductItem : creates from form params
 ```
 
 ## Prerequisites
